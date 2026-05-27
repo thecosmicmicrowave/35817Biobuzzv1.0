@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.pedroPathing;
 
 import com.pedropathing.algorithm.Foresight;
 import com.pedropathing.algorithm.ForesightConfig;
+import com.pedropathing.controllers.Controller;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.math.Matrix;
 import com.pedropathing.revhub.drivetrains.Mecanum;
@@ -20,10 +21,10 @@ public class Constants {
                 c.rightFrontName.set("rightFront");
                 c.rightRearName.set("rightRear");
 
-                c.leftFrontDirection.set(DcMotorSimple.Direction.FORWARD);
-                c.leftRearDirection.set(DcMotorSimple.Direction.FORWARD);
-                c.rightFrontDirection.set(DcMotorSimple.Direction.REVERSE);
-                c.rightRearDirection.set(DcMotorSimple.Direction.REVERSE);
+                c.leftFrontDirection.set(DcMotorSimple.Direction.REVERSE);
+                c.leftRearDirection.set(DcMotorSimple.Direction.REVERSE);
+                c.rightFrontDirection.set(DcMotorSimple.Direction.FORWARD);
+                c.rightRearDirection.set(DcMotorSimple.Direction.FORWARD);
 
                 c.manualBrakeMode.set(true);
             }
@@ -45,6 +46,7 @@ public class Constants {
 
     static ForesightConfig foresightConfig = new ForesightConfig(
             c -> {
+                c.headingController.set(Controller.pid(1.5,0,0).plus(Controller.staticFeedforward(0.1)));
                 c.linearBrakeCoefficients.set(Matrix.diag(0.139333365, 0.139333365));
                 c.quadraticBrakeCoefficients.set(Matrix.diag(0.000210842, 0.000210842));
                 c.maxAchievableForwardVelocity.set(88.036);

@@ -2,8 +2,7 @@ repositories {
     mavenCentral()
     mavenLocal()
     google() // Needed for androidx
-    maven { url = "https://repo.dairy.foundation/releases" }
-    maven { url = "https://repo.dairy.foundation/snapshots" }
+    maven { url = 'https://maven.brott.dev/' }
 }
 
 dependencies {
@@ -21,8 +20,9 @@ dependencies {
         exclude group: 'org.aspectj', module: 'aspectjtools'
     }
     implementation 'com.pedropathing:telemetry:1.0.0'
-    implementation "dev.frozenmilk.sinister:Sloth:0.2.4"
-    implementation "dev.frozenmilk:Sinister:2.2.0"
-    implementation 'com.acmerobotics.slothboard:dashboard:0.2.4+0.4.17'
+
+    implementation('com.acmerobotics.dashboard:dashboard:0.6.0') {
+        exclude group: 'org.firstinspires.ftc'
+    }
 }
 
