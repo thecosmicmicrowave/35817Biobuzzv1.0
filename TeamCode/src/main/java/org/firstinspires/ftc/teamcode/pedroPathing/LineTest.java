@@ -1,7 +1,12 @@
 package org.firstinspires.ftc.teamcode.pedroPathing;
 
+import androidx.core.graphics.drawable.IconCompat;
 import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.pedropathing.algorithm.Algorithm;
+import com.pedropathing.algorithm.Foresight;
+import com.pedropathing.drivetrain.DrivePowers;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.math.Pose;
 import com.pedropathing.paths.CompoundPath;
@@ -13,9 +18,10 @@ import com.pedropathing.paths.interpolator.Interpolator;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
+@Config
 @TeleOp
 public class LineTest extends OpMode {
-    public static double DISTANCE = 40;
+    public static double DISTANCE = 24;
 
     private Path line;
     private Follower follower;
@@ -33,7 +39,7 @@ public class LineTest extends OpMode {
     public void start() {
         Curve forwards = new Line(new Pose(72,72, 0), new Pose(DISTANCE + 72,72, 0));
         Curve backwards = new Line(new Pose(DISTANCE + 72,72, 0), new Pose(72,72, 0));
-        line = new CompoundPath(new SimplePath(forwards, Interpolator.constant(0)), new SimplePath(backwards, Interpolator.constant(0)));
+        line = new SimplePath(forwards, Interpolator.constant(0));//, new SimplePath(backwards, Interpolator.constant(0)));
         follower.follow(line);
     }
 
@@ -42,6 +48,20 @@ public class LineTest extends OpMode {
         follower.update();
         multipleTelemetry.addData("Is Busy?", follower.isBusy());
         multipleTelemetry.addData("Pose", follower.pose());
+        DrivePowers hold = DrivePowers.zero();
+        if (follower.state() != null) {
+            if (follower.state().pathTracker() != null) {
+                multipleTelemetry.addData("Empty", follower.state().pathTracker().empty());
+                multipleTelemetry.addData("Is Following", follower.state().pathTracker().isFollowing());
+                multipleTelemetry.addData("Size", follower.state().pathTracker().size());
+                multipleTelemetry.addData("End", follower.state().pathTracker().end());
+                multipleTelemetry.addLine();
+//                hold = follower.algorithm().hold(follower.state().pathTracker().end(), follower.state());
+            }
+        }
+//        multipleTelemetry.addData("Forward", hold.forward());
+//        multipleTelemetry.addData("Strafe", hold.strafe());
+//        multipleTelemetry.addData("Turn", hold.turn());
         multipleTelemetry.update();
     }
 }
