@@ -16,10 +16,10 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 public class Constants {
     static MecanumConfig mecanumConfig = new MecanumConfig(
             c -> {
-                c.leftFrontName.set("lf");
-                c.leftRearName.set("lb");
-                c.rightFrontName.set("rf");
-                c.rightRearName.set("rb");
+                c.frontLeftName.set("lf");
+                c.backLeftName.set("lb");
+                c.frontRightName.set("rf");
+                c.backRightName.set("rb");
 
                 c.leftFrontDirection.set(DcMotorSimple.Direction.REVERSE);
                 c.leftRearDirection.set(DcMotorSimple.Direction.REVERSE);
@@ -59,9 +59,5 @@ public class Constants {
 
     public static Follower create(HardwareMap h) {
         return new Follower(new Pinpoint(h, pinpointConfig), new Mecanum(h, mecanumConfig), new Foresight(foresightConfig));
-    }
-
-    public static Follower createSimple(HardwareMap h) {
-        return new Follower(new Pinpoint(h, pinpointConfig), new Mecanum(h, mecanumConfig), new DumbHold(foresightConfig));
     }
 }

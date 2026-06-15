@@ -22,7 +22,7 @@ public class HoldTest extends OpMode {
     @Override
     public void init() {
         follower = Constants.create(hardwareMap);
-        follower.pose(new Pose(72, 72, 0));
+        follower.setPose(new Pose(72, 72, 0));
 
         multipleTelemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
     }
@@ -35,23 +35,9 @@ public class HoldTest extends OpMode {
     @Override
     public void loop() {
         follower.update();
-        multipleTelemetry.addData("Is Busy?", follower.isBusy());
+        multipleTelemetry.addData("Mode", follower.mode());
+        multipleTelemetry.addData("Idle?", follower.idle());
         multipleTelemetry.addData("Pose", follower.pose());
-        DrivePowers hold = DrivePowers.zero();
-        if (follower.state() != null) {
-            multipleTelemetry.addData("Heading", follower.state().motionState().pose().heading());
-            if (follower.state().pathTracker() != null) {
-                multipleTelemetry.addData("Empty", follower.state().pathTracker().empty());
-                multipleTelemetry.addData("Is Following", follower.state().pathTracker().isFollowing());
-                multipleTelemetry.addData("Size", follower.state().pathTracker().size());
-                multipleTelemetry.addData("End", follower.state().pathTracker().end());
-                multipleTelemetry.addLine();
-                hold = follower.algorithm().hold(follower.state().pathTracker().end(), follower.state());
-            }
-        }
-        multipleTelemetry.addData("Forward", hold.forward());
-        multipleTelemetry.addData("Strafe", hold.strafe());
-        multipleTelemetry.addData("Turn", hold.turn());
         multipleTelemetry.update();
     }
 }

@@ -16,7 +16,7 @@ public class LocalizationTest extends OpMode {
     @Override
     public void init() {
         follower = Constants.create(hardwareMap);
-        follower.pose(new Pose(72, 72, 0));
+        follower.setPose(new Pose(72, 72, 0));
 
         multipleTelemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
     }
@@ -35,9 +35,9 @@ public class LocalizationTest extends OpMode {
         follower.manual(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
         follower.update();
         multipleTelemetry.addData("Loop Time Hz", 1000/loopTime);
-        multipleTelemetry.addData("Is Busy?", follower.isBusy());
+        multipleTelemetry.addData("Mode", follower.mode());
+        multipleTelemetry.addData("Idle?", follower.idle());
         multipleTelemetry.addData("Pose", follower.pose());
-        multipleTelemetry.addData("Turn Joystick", gamepad1.right_stick_x);
         multipleTelemetry.update();
     }
 }
