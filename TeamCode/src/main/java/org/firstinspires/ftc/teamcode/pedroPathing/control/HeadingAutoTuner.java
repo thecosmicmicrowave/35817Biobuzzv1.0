@@ -136,7 +136,10 @@ public class HeadingAutoTuner extends OpMode {
             y.add(Math.log(K - vel));
             x.add(times.get(i));
         }
-        double[] linReg = linearFit(x.stream().toArray(Double[]::new), y.stream().toArray(Double[]::new));
+        double[] linReg = linearFit(
+                x.toArray(new Double[0]),
+                y.toArray(new Double[0])
+        );
         if (linReg[1] == 0) throw new IllegalArgumentException("Failed calibration.");
         this.tau = -1.0/linReg[1];
     }
