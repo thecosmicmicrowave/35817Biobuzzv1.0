@@ -1,225 +1,255 @@
 package org.firstinspires.ftc.teamcode.pedroPathing.identification;
 
 import android.annotation.SuppressLint;
+
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.follower.Follower;
-import com.pedropathing.math.Pose;
 import com.pedropathing.math.Vector2D;
-import com.pedropathing.utils.Timer;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-
+import com.qualcomm.robotcore.hardware.VoltageSensor;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * This is the Forward Braking Identification. It runs the robot forward and backward at various
+ * power levels, recording the robot’s velocity and position immediately before braking.
+ * The motors are then set to a very small reverse power, which actives a harsh velocity-proportional force.
+ * Once the robot comes to a complete stop, the tuner measures the stopping distance.
+ * Using the collected data, it generates a velocity-vs-stopping-distance graph and fits a quadratic curve to model the braking behavior.
+ *
+ * @author Jacob Ophoven - 12649 Code Blooded
+ * @version 8/11/2026
+ */
 @TeleOp(group = "2")
 public class ForwardBrakingIdentification extends OpMode {
-    private static final double[] TEST_POWERS =
-            {1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2};
-    private static final double BRAKING_POWER = 0.2;
+    private static double[] POWERS;
 
-    private static final int DRIVE_TIME_MS = 1000;
+    public static int trials = 12;
+    public static double maxPower = 1;
+    public static double minPower = 0.2;
+    public static double bias = 1.5; // how much it favors doing trials with higher powers
+    public static double brakingPower = 0.001;
+    public static int TILES_IN_FRONT_OF_ROBOT = 5; // Must be at least 3
+    public static double headingP = 1.5;
+    public static double headingD = 0.1;
 
-    private enum State {
-        START_MOVE,
-        WAIT_DRIVE_TIME,
-        APPLY_BRAKE,
-        WAIT_BRAKE_TIME,
-        RECORD,
-        DONE
-    }
-
-    private static class BrakeRecord {
-        double timeMs;
-        Pose pose;
-        double velocity;
-
-        BrakeRecord(double timeMs, Pose pose, double velocity) {
-            this.timeMs = timeMs;
-            this.pose = pose;
-            this.velocity = velocity;
-        }
-    }
-
-    private State state = State.START_MOVE;
-
-    private final Timer timer = new Timer();
-
+    private final List<double[]> velocityToBrakingDistance = new ArrayList<>();
+    private State state = State.DRIVE;
     private int iteration = 0;
+    private int direction;
+    private double power;
 
     private Vector2D startPosition;
     private double measuredVelocity;
 
-    private final List<double[]> velocityToBrakingDistance = new ArrayList<>();
-    private final List<BrakeRecord> brakeData = new ArrayList<>();
     private Follower follower;
+    private VoltageSensor voltageSensor;
 
     @Override
     public void init() {
+        POWERS = biasedGradient(trials, maxPower, minPower, bias);
+
         follower = Constants.create(hardwareMap);
-        follower.setPose(Pose.zero());
+        voltageSensor = hardwareMap.getAll(VoltageSensor.class).iterator().next();
+
         follower.update();
+
+        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
+        recordBrakeData();
     }
 
     @Override
     public void init_loop() {
-        telemetry.addLine("The robot will move forwards and backwards starting at max speed and slowing down.");
-        telemetry.addLine("Make sure you have enough room. Leave at least 4-5 feet.");
-        telemetry.addLine("After stopping, kFriction and kBraking will be displayed.");
+        telemetry.addLine("The robot will need " + TILES_IN_FRONT_OF_ROBOT + " tiles in front of it to run.");
+        telemetry.addLine("It will drive at different powers forwards and backwards, measuring braking distance while correcting its heading.");
+        telemetry.addLine("Make sure you have enough room.");
+        telemetry.addLine("After stopping, the forward linear and quadratic braking coefficients will be displayed.");
         telemetry.update();
         follower.update();
     }
 
-    @Override
-    public void start() {
-        timer.reset();
-        follower.update();
+    private double getHeadingPower() {
+        return headingP * angleWrap(0 - follower.pose().heading()) - headingD * follower.velocity().omega;
     }
 
-    @SuppressLint("DefaultLocale")
+    private void drive() {
+        follower.manual(power * direction, 0.0, getHeadingPower());
+    }
+
+    private static double angleWrap(double angle) {
+        while (angle <= -Math.PI) angle += 2 * Math.PI;
+        while (angle > Math.PI) angle -= 2 * Math.PI;
+        return angle;
+    }
+
+    private void brake() {
+        double headingPower = getHeadingPower();
+
+        double brake = -brakingPower * direction;
+
+        double minBrake = Math.abs(headingPower) + 0.001;
+
+        if (direction > 0) {
+            brake = Math.min(brake, -minBrake);
+        } else {
+            brake = Math.max(brake, minBrake);
+        }
+
+        follower.manual(brake, 0, headingPower);
+    }
+
+    private void recordBrakeData() {
+        double voltage = voltageSensor.getVoltage();
+        double duty = state == State.BRAKE ? -brakingPower * direction: power * direction;
+        double appliedVoltage = voltage * duty;
+
+        telemetry.addData("timestamp seconds", time);
+        telemetry.addData("applied voltage", appliedVoltage);
+        telemetry.addData("velocity inches per second", follower.velocity().vx);
+        telemetry.addData("position inches", follower.pose().x());
+        telemetry.addData("battery voltage", voltage);
+        telemetry.addData("duty cycle", duty);
+        telemetry.addData("state", state);
+        telemetry.update();
+    }
+
     @Override
     public void loop() {
         follower.update();
+        direction = (iteration % 2 == 0) ? 1 : -1;
+        if (iteration < POWERS.length) {
+            power = POWERS[iteration];
+        }
 
-        double direction = (iteration % 2 == 0) ? 1 : -1;
+        if (state != State.DONE) {
+            recordBrakeData();
+        }
+
+        if (gamepad1.b) {
+            follower.stop();
+            requestOpModeStop();
+            return;
+        }
 
         switch (state) {
-            case START_MOVE: {
-                if (iteration >= TEST_POWERS.length) {
-                    state = State.DONE;
+            case DRIVE: {
+                if ((direction == 1 && follower.pose().x() > (TILES_IN_FRONT_OF_ROBOT - 2) * 24 + 12) ||
+                        (direction == -1 && follower.pose().x() < 12)) {
+                    startPosition = follower.pose().toVector2D();
+                    measuredVelocity = follower.velocity().toVector2D().magnitude();
+
+                    brake();
+                    state = State.BRAKE;
+                    break;
+                }
+                drive();
+                break;
+            }
+            case BRAKE: {
+                if (follower.velocity().toVector2D().magnitude() > 0.001) {
+                    brake();
                     break;
                 }
 
-                double currentPower = TEST_POWERS[iteration];
-                follower.manual(direction * currentPower, 0, 0);
-
-                timer.reset();
-                state = State.WAIT_DRIVE_TIME;
+                collectTrialData();
                 break;
             }
-
-            case WAIT_DRIVE_TIME: {
-                if (timer.milliseconds() >= DRIVE_TIME_MS) {
-                    measuredVelocity = follower.velocity().toVector2D().magnitude();
-                    startPosition = follower.pose().toVector2D();
-                    state = State.APPLY_BRAKE;
-                }
-                break;
-            }
-
-            case APPLY_BRAKE: {
-                follower.manual(BRAKING_POWER * direction, 0, 0);
-
-                timer.reset();
-                state = State.WAIT_BRAKE_TIME;
-                break;
-            }
-
-            case WAIT_BRAKE_TIME: {
-                double t = timer.milliseconds();
-                Pose currentPose = follower.pose();
-                double currentVelocity = follower.velocity().toVector2D().magnitude();
-
-                brakeData.add(new BrakeRecord(t, currentPose, currentVelocity));
-
-
-                if (follower.velocity().toVector2D().dot(Vector2D.polar(direction,
-                        follower.pose().heading())) <= 0) {
-                    state = State.RECORD;
-                }
-                break;
-            }
-
-            case RECORD: {
-                Vector2D endPosition = follower.pose().toVector2D();
-                double brakingDistance = endPosition.minus(startPosition).magnitude();
-
-                velocityToBrakingDistance.add(new double[]{measuredVelocity, brakingDistance});
-
-                telemetry.addLine(String.format("Test %d: v=%.3f  d=%.3f", iteration, measuredVelocity, brakingDistance));
-
-                iteration++;
-                state = State.START_MOVE;
-
-                break;
-            }
-
-            case DONE: {
-
-                double[] coefficients = quadraticFit(velocityToBrakingDistance);
-
-                telemetry.addLine("Tuning Complete");
-                telemetry.addLine("Braking Profile:");
-                telemetry.addData("Forward Quadratic Brake Coefficient", coefficients[1]);
-                telemetry.addData("Forward Linear Brake Coefficient", coefficients[0]);
-                for (BrakeRecord record : brakeData) {
-                    Pose p = record.pose;
-                    telemetry.addLine(String.format("t=%.0f ms, x=%.2f, y=%.2f, θ=%.2f, v=%.2f",
-                            record.timeMs, p.x(), p.y(),
-                            p.heading(),
-                            record.velocity));
-                }
-                break;
-            }
+            case DONE: {}
         }
-        telemetry.update();
     }
 
-    public static double[] quadraticFit(List<double[]> points) {
-        double sumX2 = 0, sumX3 = 0, sumX4 = 0;
-        double sumXY = 0, sumX2Y = 0;
+    @SuppressLint("DefaultLocale")
+    public void collectTrialData() {
+        Vector2D endPosition = follower.pose().toVector2D();
+        double brakingDistance = endPosition.minus(startPosition).magnitude();
 
-        for (double[] point : points) {
-            double x = point[0];
-            double y = point[1];
+        velocityToBrakingDistance.add(new double[]{measuredVelocity, brakingDistance});
 
-            sumX2 += x * x;
-            sumX3 += x * x * x;
-            sumX4 += x * x * x * x;
-            sumXY += x * y;
-            sumX2Y += x * x * y;
+        iteration++;
+
+        if (iteration >= POWERS.length) {
+            follower.stop();
+
+            double[] coefficients = quadraticFit(velocityToBrakingDistance);
+
+            telemetry.addData("Forward Braking Quadratic", coefficients[1]);
+            telemetry.addData("Forward Braking Linear", coefficients[0]);
+
+            telemetry.addLine("Samples:");
+            for (int i = 0; i < velocityToBrakingDistance.size(); i++) {
+                double[] pair = velocityToBrakingDistance.get(i);
+                telemetry.addData("Sample " + i, String.format(" v=%.3f d=%.3f", pair[0], pair[1]));
+            }
+            telemetry.update();
+
+            state = State.DONE;
+        } else {
+            state = State.DRIVE;
         }
-
-        double[][] matrix = {
-                {sumX2, sumX3},
-                {sumX3, sumX4}
-        };
-
-        double[] constants = {sumXY, sumX2Y};
-
-        return solveLinearSystem(matrix, constants); // returns {b, a}
     }
 
-    private static double[] solveLinearSystem(double[][] A, double[] B) {
-        int n = B.length;
-        double[] X = new double[n];
-        double detA = determinant(A);
+    public static double[] quadraticFit(List<double[]> samples) {
+        double s11 = 0.0;
+        double s12 = 0.0;
+        double s22 = 0.0;
 
-        if (Math.abs(detA) < 1e-10) {
-            throw new IllegalArgumentException("Matrix is singular or nearly singular");
+        double t1 = 0.0;
+        double t2 = 0.0;
+
+        for (double[] sample : samples) {
+            double v = sample[0];
+            double d = sample[1];
+
+            double x1 = v;
+            double x2 = v * v;
+
+            s11 += x1 * x1;
+            s12 += x1 * x2;
+            s22 += x2 * x2;
+
+            t1 += x1 * d;
+            t2 += x2 * d;
         }
 
-        for (int i = 0; i < n; i++) {
-            double[][] Ai = replaceColumn(A, B, i);
-            X[i] = determinant(Ai) / detA;
+        double det = s11 * s22 - s12 * s12;
+        if (Math.abs(det) < 1e-12) {
+            throw new IllegalArgumentException("Regression matrix is singular.");
         }
 
-        return X;
+        double b = (t1 * s22 - t2 * s12) / det;
+        double a = (s11 * t2 - s12 * t1) / det;
+
+        return new double[]{b, a};
     }
 
-    private static double determinant(double[][] matrix) {
-        return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
+    private enum State {
+        DRIVE,
+        BRAKE,
+        DONE
     }
 
-    private static double[][] replaceColumn(double[][] matrix, double[] column, int colIndex) {
-        double[][] newMatrix = new double[matrix.length][matrix[0].length];
+    private static double[] biasedGradient(
+            int count,
+            double max,
+            double min,
+            double bias
+    ) {
+        if (count < 2) return new double[]{max};
 
-        for (int i = 0; i < matrix.length; i++) {
-            System.arraycopy(matrix[i], 0, newMatrix[i], 0, matrix[i].length);
-            newMatrix[i][colIndex] = column[i];
+        double[] values = new double[count];
+
+        for (int i = 0; i < count; i++) {
+            double t = (double) i / (count - 1);
+
+            double curved = 1 - Math.pow(t, bias);
+
+            values[i] = min + curved * (max - min);
         }
 
-        return newMatrix;
+        return values;
     }
 }
