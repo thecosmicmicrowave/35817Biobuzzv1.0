@@ -17,11 +17,8 @@ import java.util.List;
 
 @TeleOp(group = "3")
 public class ForwardTranslationalAutoTuner extends OpMode {
-    public static double BETA_LARGE = 0.6;
-    public static double BETA_SMALL = 0.9;
-
-    public static double VELOCITY_CORRECTION_AGGRESSIVENESS = 4.3;
-    public static double ACCEL_AGGRESSIVENESS = 1.0;
+    public static double BETA_LARGE = 0.042577;
+    public static double BETA_SMALL = 0.12773;
     public static double VEL_AGGRESSIVENESS = 0.85;
 
     private static final double POWER = 0.4;
@@ -104,17 +101,13 @@ public class ForwardTranslationalAutoTuner extends OpMode {
         double kP_large = calculatekP(BETA_LARGE);
         double kP_small = calculatekP(BETA_SMALL);
 
-        double kP = (VELOCITY_CORRECTION_AGGRESSIVENESS - 1) / K;
-
         telemetry.addData("Est tau (s)", String.format("%.4f", tau));
         telemetry.addData("Est K (in/s per power)", String.format("%.4f", K));
         telemetry.addData("Est kV", kV);
         telemetry.addData("Est kA", kA);
         telemetry.addData("Primary Forward Translational", "kP=" + String.format("%.4f", kP_large));
         telemetry.addData("Secondary Forward Translational", "kP=" + String.format("%.4f", kP_small));
-        telemetry.addData("Drive Feedforward", "kV=" + String.format("%.4f", kV * VEL_AGGRESSIVENESS) +
-                ", kA=" + String.format("%.4f", kA * ACCEL_AGGRESSIVENESS));
-        telemetry.addData("Drive Feedback", "kP=" + String.format("%.4f", kP));
+        telemetry.addData("Drive Feedforward", "kV=" + String.format("%.4f", kV * VEL_AGGRESSIVENESS));
     }
 
     private double calculatekP(double beta) {
