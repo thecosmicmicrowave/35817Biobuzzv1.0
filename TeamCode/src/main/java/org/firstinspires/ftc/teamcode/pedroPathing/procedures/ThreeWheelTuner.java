@@ -13,8 +13,6 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
-
 import java.util.List;
 
 public class ThreeWheelTuner extends Procedure {
@@ -134,26 +132,6 @@ public class ThreeWheelTuner extends Procedure {
         return measured;
     }
 
-    static void display(Telemetry telemetry, HardwareMap map, ThreeWheelConfig config,
-                        ThreeWheelLocalizer localizer) {
-        String[] names = {leftEncoderName, rightEncoderName, strafeEncoderName};
-        String[] labels = {"Left " + leftEncoderName, "Right " + rightEncoderName, "Strafe " + strafeEncoderName};
-        double[] directions = {config.leftEncoderDirection.get(), config.rightEncoderDirection.get(),
-                config.strafeEncoderDirection.get()};
-        for (int i = 0; i < names.length; i++) {
-            DcMotorEx motor = map.get(DcMotorEx.class, names[i]);
-            int raw = motor.getCurrentPosition();
-            double ticks = raw * (motor.getDirection() == DcMotorSimple.Direction.FORWARD ? 1 : -1)
-                    * directions[i];
-            telemetry.addData(labels[i] + " SDK ticks", raw);
-            telemetry.addData(labels[i] + " corrected ticks", ticks);
-        }
-        telemetry.addData("Localizer X", localizer.pose().x());
-        telemetry.addData("Localizer Y", localizer.pose().y());
-        telemetry.addData("Total heading", localizer.getTotalHeading());
-        telemetry.addData("Save", "Complete motion, stop moving, then press Stop");
-    }
-
     static String direction(double direction) {
         return direction == Encoder.REVERSE ? "Encoder.REVERSE" : "Encoder.FORWARD";
     }
@@ -216,14 +194,6 @@ class ThreeWheelResolution extends TuningOpMode<List<Double>> {
         while (!isStopRequested()) {
             localizer.update();
             position = localizer.pose();
-            double movement = pod.equals("Strafe") ? localizer.pose().y() : localizer.pose().x();
-            ThreeWheelTuner.display(telemetry, hardwareMap, config, localizer);
-            telemetry.addData("Selected pod", pod);
-            telemetry.addData("Measured ticks", movement);
-            if (movement == 0.0) {
-                telemetry.addLine("No net movement for this pod. Check its ticks before saving.");
-            }
-            telemetry.update();
         }
 
         if (position == null) {
@@ -272,13 +242,6 @@ class ThreeWheelOffsets extends TuningOpMode<List<Double>> {
         while (!isStopRequested()) {
             localizer.update();
             position = localizer.pose();
-            ThreeWheelTuner.display(telemetry, hardwareMap, config, localizer);
-            telemetry.addData("Selected pod", left ? "Left" : "Right");
-            telemetry.addData("Measured pod travel (in)", localizer.pose().x());
-            if (localizer.pose().x() == 0.0) {
-                telemetry.addLine("No net parallel pod travel. Complete the rotation before saving.");
-            }
-            telemetry.update();
         }
 
         if (position == null) {
@@ -314,13 +277,6 @@ class ThreeWheelTurn extends TuningOpMode<Double> {
         while (!isStopRequested()) {
             localizer.update();
             heading = localizer.getTotalHeading();
-            double rotation = heading - startHeading;
-            ThreeWheelTuner.display(telemetry, hardwareMap, config, localizer);
-            telemetry.addData("Rotation (degrees)", Math.toDegrees(rotation));
-            if (rotation <= 0.0) {
-                telemetry.addLine("No positive rotation. Complete the CCW turn before saving.");
-            }
-            telemetry.update();
         }
 
         if (heading == null || heading <= startHeading) {
@@ -329,4 +285,5 @@ class ThreeWheelTurn extends TuningOpMode<Double> {
         return config.turnTicksToRadians.get() * (2.0 * Math.PI) / (heading - startHeading);
     }
 }
+
 
