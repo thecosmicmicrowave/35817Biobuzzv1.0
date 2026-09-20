@@ -3,7 +3,6 @@ package org.firstinspires.ftc.teamcode.globals;
 import com.pedropathing.math.Pose;
 
 import dev.nextftc.control.util.InterpolatingMap;
-import dev.nextftc.hardware.actuators.NextMotor;
 import kotlin.jvm.functions.Function3;
 
 /**
@@ -104,15 +103,9 @@ public final class Constants {
     public static final double SPINUP_TIMEOUT_MS = 2000;
 
     // ---------------------------------------------------------------- drivetrain
-
-    /**
-     * Drivetrain motor directions. Which side needs reversing depends on how the motors are
-     * mounted, so both are here to be flipped during bring-up rather than buried in Robot.
-     */
-    public static final NextMotor.Direction FRONT_LEFT_DIRECTION = NextMotor.Direction.REVERSE;
-    public static final NextMotor.Direction BACK_LEFT_DIRECTION = NextMotor.Direction.REVERSE;
-    public static final NextMotor.Direction FRONT_RIGHT_DIRECTION = NextMotor.Direction.FORWARD;
-    public static final NextMotor.Direction BACK_RIGHT_DIRECTION = NextMotor.Direction.FORWARD;
+    //
+    // Drivetrain motor names and directions live in pedro/Constants.java, not here: Pedro's
+    // Follower owns those motors.
 
     // ---------------------------------------------------------------- lookup tables
 

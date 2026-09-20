@@ -12,7 +12,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 
-import dev.nextftc.hardware.actuators.NextMotor;
 import dev.nextftc.robot.Mechanism;
 import dev.nextftc.robot.NextRobot;
 
@@ -27,15 +26,14 @@ import dev.nextftc.robot.NextRobot;
  * not be cleared, leaving a stale object with dead hardware handles behind. Commands that need
  * the robot take it as a parameter.
  *
+ * <p>The drivetrain is not represented here. Pedro's {@link Follower} owns those four motors
+ * and teleop drives them through {@code follower.manual(...)}; adding NextFTC motors for the
+ * same hardware would mean two writers fighting over it every loop.
+ *
  * <p>This object is built once at event-loop creation and outlives individual OpMode runs, so
  * every OpMode must call {@link #initFollower(HardwareMap, Pose)} and {@link #reset()} — see {@link #reset()}.
  */
 public class Robot implements NextRobot {
-
-    public final NextMotor frontLeft = new NextMotor("frontLeft");
-    public final NextMotor frontRight = new NextMotor("frontRight");
-    public final NextMotor backLeft = new NextMotor("backLeft");
-    public final NextMotor backRight = new NextMotor("backRight");
 
     public final IntakeTransfer intake = new IntakeTransfer();
     public final Shooter shooter = new Shooter(this::pose);
@@ -43,12 +41,6 @@ public class Robot implements NextRobot {
     private Follower follower;
 
     public Robot() {
-        // Safe in a field-initializer context: NextMotor defers the write until the lazy
-        // hardware resolves, so this does not touch the hardware map during the classpath scan.
-        frontLeft.setDirection(Constants.FRONT_LEFT_DIRECTION);
-        backLeft.setDirection(Constants.BACK_LEFT_DIRECTION);
-        frontRight.setDirection(Constants.FRONT_RIGHT_DIRECTION);
-        backRight.setDirection(Constants.BACK_RIGHT_DIRECTION);
     }
 
     // ---------------------------------------------------------------- lifecycle

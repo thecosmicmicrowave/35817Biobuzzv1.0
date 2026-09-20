@@ -4,14 +4,27 @@ import org.firstinspires.ftc.teamcode.commands.ShootCommands;
 import org.firstinspires.ftc.teamcode.globals.Constants;
 import org.firstinspires.ftc.teamcode.globals.Robot;
 
+import com.pedropathing.drivetrain.DrivePowers;
+import com.pedropathing.follower.ManualDrive;
 import com.pedropathing.ivy.commands.Commands;
 
-import dev.nextftc.robot.drive.DriveCommands;
 import dev.nextftc.robot.opmode.BulkReadHook;
 import dev.nextftc.robot.opmode.NextOpMode;
 import dev.nextftc.robot.opmode.NextTeleop;
 import dev.nextftc.robot.triggers.CommandGamepad;
 
+/**
+ * Driver-controlled OpMode.
+ *
+ * <p>Driving goes through Pedro's own manual drive rather than NextFTC's {@code DriveCommands}.
+ * The follower owns the drivetrain motors, so letting NextFTC drive them as well would mean two
+ * writers fighting over the same hardware every loop.
+ *
+ * <p>Ordering matters. {@code follower.manual(...)} is called here in {@link #periodic()} and
+ * {@code follower.update()} runs afterwards from {@code Robot.periodic()}, because NextFTC's
+ * robot hook fires after the OpMode's own periodic. The follower must be updated every loop
+ * while driving manually, which also keeps localization live for the shooter's auto-aim.
+ */
 @NextTeleop(name = "Main TeleOp")
 public class MainTeleOp extends NextOpMode {
 
@@ -56,19 +69,29 @@ public class MainTeleOp extends NextOpMode {
     }
 
     @Override
-    public void start() {
-        DriveCommands.mecanumDriveFieldCentric(
-                robot.frontLeft,
-                robot.frontRight,
-                robot.backLeft,
-                robot.backRight,
-                gamepad1,
-                () -> robot.pose().heading()
-        ).schedule();
+    public void periodic() {
+        drive();
+        pushTelemetry();
     }
 
-    @Override
-    public void periodic() {
+    private void drive() {
+        if (robot.follower() == null) {
+            return;
+        }
+
+        DrivePowers powers = ManualDrive.fieldCentric(
+                -gamepad1.left_stick_y,
+                gamepad1.left_stick_x,
+                gamepad1.right_stick_x,
+                robot.follower().pose().heading()
+        );
+
+        // Swap for ManualDrive.driveOrHold(robot.follower(), powers) to hold position when the
+        // driver releases the sticks, which resists being pushed while lining up a shot.
+        robot.follower().manual(powers);
+    }
+
+    private void pushTelemetry() {
         telemetry.addData("distance to goal", robot.shooter.distanceToGoal());
         telemetry.addData("turret (deg)", robot.shooter.commandedTurretDeg());
         telemetry.addData("hood", robot.shooter.commandedHoodPosition());
