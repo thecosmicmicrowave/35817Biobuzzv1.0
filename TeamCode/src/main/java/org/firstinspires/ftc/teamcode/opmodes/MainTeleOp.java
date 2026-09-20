@@ -86,9 +86,10 @@ public class MainTeleOp extends NextOpMode {
                 robot.follower().pose().heading()
         );
 
-        // Swap for ManualDrive.driveOrHold(robot.follower(), powers) to hold position when the
-        // driver releases the sticks, which resists being pushed while lining up a shot.
-        robot.follower().manual(powers);
+        // driveOrHold rather than manual: when the sticks are released the follower holds its
+        // current pose instead of coasting, so the robot resists being pushed while lining up
+        // a shot. Swap for robot.follower().manual(powers) to let it coast instead.
+        ManualDrive.driveOrHold(robot.follower(), powers);
     }
 
     private void pushTelemetry() {
