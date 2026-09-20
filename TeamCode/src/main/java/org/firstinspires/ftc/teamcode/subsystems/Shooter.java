@@ -9,6 +9,7 @@ import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
 import dev.nextftc.control.filters.Debouncer;
+import dev.nextftc.hardware.actuators.MotorVelocityConstants;
 import dev.nextftc.hardware.actuators.NextMotor;
 import dev.nextftc.hardware.actuators.NextServo;
 import dev.nextftc.robot.Mechanism;
@@ -34,7 +35,12 @@ import dev.nextftc.units.Units;
  */
 public class Shooter implements Mechanism {
 
-    private final NextMotor flywheel = new NextMotor("flywheel");
+    /**
+     * Constructed with an explicit angle-per-count. NextFTC defaults it to one radian per
+     * encoder tick, which would make every velocity reading meaningless.
+     */
+    private final NextMotor flywheel = new NextMotor(
+            "flywheel", Units.Rotations.of(1.0 / Constants.FLYWHEEL_TICKS_PER_REV));
     private final NextServo hood = new NextServo("hood");
     private final NextServo turretLeft = new NextServo("turretLeft");
     private final NextServo turretRight = new NextServo("turretRight");
@@ -77,6 +83,17 @@ public class Shooter implements Mechanism {
     public Shooter(Supplier<Pose> poseSupplier) {
         this.poseSupplier = poseSupplier;
         turretRight.setDirection(NextMotor.Direction.REVERSE);
+
+        // NextFTC defaults every velocity gain to zero, and the velocity loop computes
+        // pid.calculate(...) + ff.calculate(...) — with all-zero gains the flywheel would be
+        // commanded to exactly zero power no matter what setpoint it is given.
+        MotorVelocityConstants velocity = flywheel.getVelocityConstants();
+        velocity.setKP(Constants.FLYWHEEL_KP);
+        velocity.setKI(Constants.FLYWHEEL_KI);
+        velocity.setKD(Constants.FLYWHEEL_KD);
+        velocity.setKS(Constants.FLYWHEEL_KS);
+        velocity.setKV(Constants.FLYWHEEL_KV);
+        velocity.setKA(Constants.FLYWHEEL_KA);
     }
 
     // ---------------------------------------------------------------- lifecycle

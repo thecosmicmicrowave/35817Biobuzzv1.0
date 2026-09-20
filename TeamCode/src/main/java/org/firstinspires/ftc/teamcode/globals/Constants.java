@@ -64,6 +64,26 @@ public final class Constants {
 
     // ---------------------------------------------------------------- flywheel
 
+    /**
+     * Encoder ticks per revolution of the flywheel motor, at the output shaft the encoder is
+     * on. 28 is a bare REV/goBILDA motor with no gearbox, which is the usual shooter setup.
+     * Wrong here means every RPM reading and the whole DISTANCE_TO_RPM table are wrong.
+     */
+    public static final double FLYWHEEL_TICKS_PER_REV = 28.0;
+
+    /**
+     * Flywheel velocity control gains. These default to zero in NextFTC, and with all-zero
+     * gains the motor's velocity loop outputs exactly zero power — the flywheel would never
+     * spin. kV is the dominant term: roughly 1 / free-speed-in-RPM, so full command at free
+     * speed. Add kP only after kV alone gets close.
+     */
+    public static final double FLYWHEEL_KP = 0.0;
+    public static final double FLYWHEEL_KI = 0.0;
+    public static final double FLYWHEEL_KD = 0.0;
+    public static final double FLYWHEEL_KS = 0.0;
+    public static final double FLYWHEEL_KV = 1.0 / 6000.0;
+    public static final double FLYWHEEL_KA = 0.0;
+
     /** Idle speed held between shots so the flywheel does not spin up from zero. */
     public static final double IDLE_RPM = 1000;
 
