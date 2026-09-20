@@ -4,6 +4,8 @@ import org.firstinspires.ftc.teamcode.commands.ShootCommands;
 import org.firstinspires.ftc.teamcode.globals.Constants;
 import org.firstinspires.ftc.teamcode.globals.Robot;
 
+import com.pedropathing.ivy.commands.Commands;
+
 import dev.nextftc.robot.drive.DriveCommands;
 import dev.nextftc.robot.opmode.BulkReadHook;
 import dev.nextftc.robot.opmode.NextOpMode;
@@ -36,15 +38,20 @@ public class MainTeleOp extends NextOpMode {
 
         driver.a().onTrue(robot.intake.toggleFlower());
 
-        driver.x().toggleOnTrue(robot.shooter.spinUp());
+        // toggleOnTrue would not work here: spinUp() is instant, so it finishes on the frame
+        // it starts and the second press would have nothing to cancel.
+        driver.x().onTrue(Commands.conditional(
+                robot.shooter::isArmed,
+                robot.shooter.idleFlywheel(),
+                robot.shooter.spinUp()));
 
-        // Turret trim. Releasing hands the turret back to pose tracking.
-        driver.dpadLeft().whileTrue(robot.shooter.manualTurret(() -> -1.0));
-        driver.dpadRight().whileTrue(robot.shooter.manualTurret(() -> 1.0));
+        driver.dpadLeft().onTrue(robot.shooter.trimTurret(-Constants.TURRET_TRIM_STEP_DEG));
+        driver.dpadRight().onTrue(robot.shooter.trimTurret(Constants.TURRET_TRIM_STEP_DEG));
 
         driver.dpadUp().onTrue(robot.shooter.trimHood(Constants.HOOD_TRIM_STEP));
         driver.dpadDown().onTrue(robot.shooter.trimHood(-Constants.HOOD_TRIM_STEP));
 
+        // Clears any manual turret override and zeroes the trims.
         driver.back().onTrue(robot.shooter.resumeAutoAim());
     }
 

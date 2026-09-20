@@ -43,6 +43,12 @@ public class Robot implements NextRobot {
     private Follower follower;
 
     public Robot() {
+        // Safe in a field-initializer context: NextMotor defers the write until the lazy
+        // hardware resolves, so this does not touch the hardware map during the classpath scan.
+        frontLeft.setDirection(Constants.FRONT_LEFT_DIRECTION);
+        backLeft.setDirection(Constants.BACK_LEFT_DIRECTION);
+        frontRight.setDirection(Constants.FRONT_RIGHT_DIRECTION);
+        backRight.setDirection(Constants.BACK_RIGHT_DIRECTION);
     }
 
     // ---------------------------------------------------------------- lifecycle

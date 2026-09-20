@@ -52,10 +52,26 @@ public class Shooter implements Mechanism {
 
     private double commandedTurretDeg = Constants.TURRET_CENTER_DEG;
     private double commandedHoodPosition = Constants.HOOD_STOWED_POSITION;
-    private long lastTurretMoveMs = 0;
     private boolean atSpeed = false;
 
-    /** True while a manual command owns the turret, suppressing pose tracking. */
+    /**
+     * Driver trim, applied on top of the pose-derived setpoints inside {@link #autoAim()}.
+     * Trimming adjusts tracking rather than replacing it, so the turret keeps following the
+     * goal and the trim survives across shots.
+     */
+    private double turretOffsetDeg = 0;
+    private double hoodOffset = 0;
+
+    /**
+     * Turret settle tracking. {@code settledTargetDeg} is the angle the timer was last started
+     * for; the timer restarts once the commanded angle has drifted a meaningful distance from
+     * it. Comparing against the per-call delta instead would never trip, because
+     * {@link #autoAim()} moves the turret a fraction of a degree per loop.
+     */
+    private double settledTargetDeg = Constants.TURRET_CENTER_DEG;
+    private long lastTurretMoveMs = 0;
+
+    /** True while {@link #manualTurret(DoubleSupplier)} owns the turret, suppressing tracking. */
     private boolean manualOverride = false;
 
     public Shooter(Supplier<Pose> poseSupplier) {
@@ -73,9 +89,12 @@ public class Shooter implements Mechanism {
     public void reset() {
         armed = false;
         manualOverride = false;
+        turretOffsetDeg = 0;
+        hoodOffset = 0;
         targetRpm = 0;
         atSpeed = false;
         atSpeedDebouncer.calculate(false);
+        settledTargetDeg = Constants.TURRET_CENTER_DEG;
         applyTurret(Constants.TURRET_CENTER_DEG);
         applyHood(Constants.HOOD_STOWED_POSITION);
         applyFlywheel();
@@ -125,6 +144,10 @@ public class Shooter implements Mechanism {
         return atSpeed;
     }
 
+    public boolean isArmed() {
+        return armed;
+    }
+
     /**
      * Whether the turret has had time to reach its commanded angle. Positional servos report
      * nothing, so this is elapsed time since the last large commanded move — if the turret is
@@ -155,13 +178,18 @@ public class Shooter implements Mechanism {
      */
     public Command autoAim() {
         return infinite(() -> {
+            double distance = distanceToGoal();
+
+            // Only the turret is surrendered to manual control; the hood keeps tracking.
             if (!manualOverride) {
-                double bearing = bearingToGoal();
-                applyTurret(Constants.clamp(bearing, Constants.TURRET_MIN_DEG, Constants.TURRET_MAX_DEG));
-                applyHood(lookUp(Constants.DISTANCE_TO_HOOD, distanceToGoal(), commandedHoodPosition));
+                applyTurret(Constants.clamp(bearingToGoal() + turretOffsetDeg,
+                        Constants.TURRET_MIN_DEG, Constants.TURRET_MAX_DEG));
             }
+            applyHood(Constants.clamp(
+                    lookUp(Constants.DISTANCE_TO_HOOD, distance, commandedHoodPosition) + hoodOffset,
+                    Constants.HOOD_MIN_POSITION, Constants.HOOD_MAX_POSITION));
             if (armed) {
-                targetRpm = lookUp(Constants.DISTANCE_TO_RPM, distanceToGoal(), targetRpm);
+                targetRpm = lookUp(Constants.DISTANCE_TO_RPM, distance, targetRpm);
             }
             applyFlywheel();
         });
@@ -228,23 +256,36 @@ public class Shooter implements Mechanism {
                 Constants.HOOD_MIN_POSITION, Constants.HOOD_MAX_POSITION)));
     }
 
+    /**
+     * Biases the tracked hood position. An offset rather than a direct write, so pose tracking
+     * continues and the trim carries across shots.
+     */
     public Command trimHood(double delta) {
-        return instant(() -> {
-            manualOverride = true;
-            applyHood(Constants.clamp(commandedHoodPosition + delta,
-                    Constants.HOOD_MIN_POSITION, Constants.HOOD_MAX_POSITION));
-        });
+        return instant(() -> hoodOffset += delta);
     }
 
-    /** Hands the hood and turret back to pose tracking after a manual override. */
+    /** Biases the tracked turret angle. */
+    public Command trimTurret(double deltaDeg) {
+        return instant(() -> turretOffsetDeg += deltaDeg);
+    }
+
+    /** Drops any manual override and clears the trims, returning to pure pose tracking. */
     public Command resumeAutoAim() {
-        return instant(() -> manualOverride = false);
+        return instant(() -> {
+            manualOverride = false;
+            turretOffsetDeg = 0;
+            hoodOffset = 0;
+        });
     }
 
     // ---------------------------------------------------------------- hardware
 
     private void applyTurret(double degrees) {
-        if (Math.abs(degrees - commandedTurretDeg) >= Constants.TURRET_MOVE_EPSILON_DEG) {
+        // Measured against the angle the settle timer was started for, not against the previous
+        // call: autoAim() nudges the turret a fraction of a degree per loop, so a per-call
+        // comparison would never exceed the epsilon and the turret would always read settled.
+        if (Math.abs(degrees - settledTargetDeg) >= Constants.TURRET_MOVE_EPSILON_DEG) {
+            settledTargetDeg = degrees;
             lastTurretMoveMs = System.currentTimeMillis();
         }
         commandedTurretDeg = degrees;

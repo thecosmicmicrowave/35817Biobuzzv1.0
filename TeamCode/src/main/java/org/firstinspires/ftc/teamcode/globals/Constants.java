@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.globals;
 import com.pedropathing.math.Pose;
 
 import dev.nextftc.control.util.InterpolatingMap;
+import dev.nextftc.hardware.actuators.NextMotor;
 import kotlin.jvm.functions.Function3;
 
 /**
@@ -49,6 +50,9 @@ public final class Constants {
 
     /** Degrees per loop of manual turret trim at full stick. */
     public static final double TURRET_TRIM_DEG_PER_LOOP = 1.5;
+
+    /** Degrees the turret trim shifts per press of the trim controls. */
+    public static final double TURRET_TRIM_STEP_DEG = 1.0;
 
     // ---------------------------------------------------------------- hood
 
@@ -98,6 +102,17 @@ public final class Constants {
 
     /** Cap on waiting for the flywheel to reach speed, so a bad tune cannot stall a match. */
     public static final double SPINUP_TIMEOUT_MS = 2000;
+
+    // ---------------------------------------------------------------- drivetrain
+
+    /**
+     * Drivetrain motor directions. Which side needs reversing depends on how the motors are
+     * mounted, so both are here to be flipped during bring-up rather than buried in Robot.
+     */
+    public static final NextMotor.Direction FRONT_LEFT_DIRECTION = NextMotor.Direction.REVERSE;
+    public static final NextMotor.Direction BACK_LEFT_DIRECTION = NextMotor.Direction.REVERSE;
+    public static final NextMotor.Direction FRONT_RIGHT_DIRECTION = NextMotor.Direction.FORWARD;
+    public static final NextMotor.Direction BACK_RIGHT_DIRECTION = NextMotor.Direction.FORWARD;
 
     // ---------------------------------------------------------------- lookup tables
 
