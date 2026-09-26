@@ -88,13 +88,26 @@ public class Shooter implements Mechanism {
     /** True while {@link #manualTurret(DoubleSupplier)} owns the turret, suppressing tracking. */
     private boolean manualOverride = false;
 
+    /** Ticks-per-rev the flywheel's encoder scaling was last built from. */
+    private double appliedTicksPerRev = Constants.FLYWHEEL_TICKS_PER_REV;
+
     public Shooter(Supplier<Pose> poseSupplier) {
         this.poseSupplier = poseSupplier;
         turretRight.setDirection(NextMotor.Direction.REVERSE);
+        applyTuning();
+    }
 
-        // NextFTC defaults every velocity gain to zero, and the velocity loop computes
-        // pid.calculate(...) + ff.calculate(...) — with all-zero gains the flywheel would be
-        // commanded to exactly zero power no matter what setpoint it is given.
+    /**
+     * Copies tunable constants into the objects that hold their own copies: the motor's velocity
+     * gains, its encoder scaling, and the debouncer. Called every loop so Panels edits to those
+     * constants take effect live — without this, they would be read once at construction and
+     * every later edit would silently do nothing.
+     *
+     * <p>NextFTC defaults every velocity gain to zero, and the velocity loop computes
+     * {@code pid.calculate(...) + ff.calculate(...)}, so with the defaults the flywheel would be
+     * commanded to exactly zero power no matter what setpoint it is given.
+     */
+    private void applyTuning() {
         MotorVelocityConstants velocity = flywheel.getVelocityConstants();
         velocity.setKP(Constants.FLYWHEEL_KP);
         velocity.setKI(Constants.FLYWHEEL_KI);
@@ -102,6 +115,14 @@ public class Shooter implements Mechanism {
         velocity.setKS(Constants.FLYWHEEL_KS);
         velocity.setKV(Constants.FLYWHEEL_KV);
         velocity.setKA(Constants.FLYWHEEL_KA);
+
+        // Rebuilt only on change, to avoid allocating a new Angle every loop.
+        if (Constants.FLYWHEEL_TICKS_PER_REV != appliedTicksPerRev) {
+            flywheel.setAnglePerCount(Units.Rotations.of(1.0 / Constants.FLYWHEEL_TICKS_PER_REV));
+            appliedTicksPerRev = Constants.FLYWHEEL_TICKS_PER_REV;
+        }
+
+        atSpeedDebouncer.setDebounceTimeSeconds(Constants.AT_SPEED_DEBOUNCE_SECONDS);
     }
 
     // ---------------------------------------------------------------- lifecycle
@@ -127,6 +148,7 @@ public class Shooter implements Mechanism {
 
     @Override
     public void periodic() {
+        applyTuning();
         atSpeed = atSpeedDebouncer.calculate(withinRpmTolerance());
     }
 
@@ -139,22 +161,22 @@ public class Shooter implements Mechanism {
 
     public double distanceToGoal() {
         Pose pose = poseSupplier.get();
-        double dx = Constants.GOAL.x() - pose.x();
-        double dy = Constants.GOAL.y() - pose.y();
+        double dx = Constants.GOAL_X - pose.x();
+        double dy = Constants.GOAL_Y - pose.y();
         return Math.hypot(dx, dy);
     }
 
     /** Bearing from the robot to the goal, in degrees relative to robot forward. */
     public double bearingToGoal() {
         Pose pose = poseSupplier.get();
-        double dx = Constants.GOAL.x() - pose.x();
-        double dy = Constants.GOAL.y() - pose.y();
+        double dx = Constants.GOAL_X - pose.x();
+        double dy = Constants.GOAL_Y - pose.y();
         double fieldBearingDeg = Math.toDegrees(Math.atan2(dy, dx));
         return Constants.normalizeDeg(fieldBearingDeg - Math.toDegrees(pose.heading()));
     }
 
     public boolean inTurretRange(double degrees) {
-        return degrees >= Constants.TURRET_MIN_DEG && degrees <= Constants.TURRET_MAX_DEG;
+        return degrees >= Constants.turretMinDeg() && degrees <= Constants.turretMaxDeg();
     }
 
     public double currentRpm() {
@@ -228,7 +250,7 @@ public class Shooter implements Mechanism {
             // Only the turret is surrendered to manual control; the hood keeps tracking.
             if (!manualOverride) {
                 applyTurret(Constants.clamp(bearingToGoal() + turretOffsetDeg,
-                        Constants.TURRET_MIN_DEG, Constants.TURRET_MAX_DEG));
+                        Constants.turretMinDeg(), Constants.turretMaxDeg()));
             }
             applyHood(Constants.clamp(
                     lookUp(Constants.DISTANCE_TO_HOOD, distance, commandedHoodPosition) + hoodOffset,
@@ -310,7 +332,7 @@ public class Shooter implements Mechanism {
      */
     public static double degreesForTurretPosition(double position) {
         return Constants.TURRET_CENTER_DEG
-                + (position - Constants.TURRET_CENTER_POSITION) / Constants.TURRET_POSITION_PER_DEG;
+                + (position - Constants.TURRET_CENTER_POSITION) / Constants.turretPositionPerDeg();
     }
 
     /** Driver turret nudge. Preempts {@code autoAim()}, which resumes when this is released. */
@@ -319,14 +341,14 @@ public class Shooter implements Mechanism {
             manualOverride = true;
             double delta = input.getAsDouble() * Constants.TURRET_TRIM_DEG_PER_LOOP;
             applyTurret(Constants.clamp(commandedTurretDeg + delta,
-                    Constants.TURRET_MIN_DEG, Constants.TURRET_MAX_DEG));
+                    Constants.turretMinDeg(), Constants.turretMaxDeg()));
             applyFlywheel();
         }).setEnd(endCondition -> manualOverride = false);
     }
 
     public Command turretTo(double degrees) {
         return instant(() -> applyTurret(Constants.clamp(degrees,
-                Constants.TURRET_MIN_DEG, Constants.TURRET_MAX_DEG)));
+                Constants.turretMinDeg(), Constants.turretMaxDeg())));
     }
 
     public Command centerTurret() {
@@ -377,7 +399,7 @@ public class Shooter implements Mechanism {
         commandedTurretDeg = degrees;
 
         double position = Constants.TURRET_CENTER_POSITION
-                + (degrees - Constants.TURRET_CENTER_DEG) * Constants.TURRET_POSITION_PER_DEG;
+                + (degrees - Constants.TURRET_CENTER_DEG) * Constants.turretPositionPerDeg();
         position = Constants.clamp(position, 0, 1);
 
         // turretRight is reversed in the constructor, so both take the same commanded position.

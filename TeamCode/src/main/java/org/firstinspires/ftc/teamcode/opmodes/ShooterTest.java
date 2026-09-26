@@ -6,6 +6,9 @@ import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 
 import com.pedropathing.ivy.commands.Commands;
 
+import com.bylazar.telemetry.PanelsTelemetry;
+
+import dev.nextftc.robot.Telemetry;
 import dev.nextftc.robot.opmode.BulkReadHook;
 import dev.nextftc.robot.opmode.NextOpMode;
 import dev.nextftc.robot.opmode.NextTeleop;
@@ -32,14 +35,18 @@ import dev.nextftc.robot.triggers.CommandGamepad;
  * wildly implausible, {@code FLYWHEEL_TICKS_PER_REV} is wrong for this motor. If it reads zero
  * while the flywheel is clearly spinning, the encoder is not wired.
  *
- * <h2>Turret: TURRET_CENTER_POSITION and TURRET_POSITION_PER_DEG</h2>
+ * <h2>Turret: TURRET_CENTER_POSITION, then verifying the gearing</h2>
+ * <p>{@code TURRET_POSITION_PER_DEG} is derived from the gear train and the servo travel, so it
+ * is not measured here — it is checked.
  * <ol>
- *   <li>Step the turret until it points straight forward. Press X to mark it — that position is
- *       {@code TURRET_CENTER_POSITION}.</li>
+ *   <li>Step the turret until it points straight forward. Press X to mark it, and set
+ *       {@code TURRET_CENTER_POSITION} to that value in Panels.</li>
  *   <li>Step to a clearly different angle and press BACK to mark it.</li>
- *   <li>Measure that second angle off the robot with a protractor.</li>
- *   <li>Telemetry shows the position delta between the marks. Divide it by your measured degrees
- *       to get {@code TURRET_POSITION_PER_DEG}.</li>
+ *   <li>Measure that angle off the robot with a protractor and compare it with the predicted
+ *       angle between marks on telemetry.</li>
+ *   <li>If they disagree, adjust {@code TURRET_SERVO_TRAVEL_DEG} in Panels until they match. A
+ *       value near 270 means the servos were never reprogrammed to 320; any other mismatch means
+ *       the PWM range is not reaching the servo's full travel.</li>
  * </ol>
  *
  * <p>For the travel limits, step carefully outward to the mechanical stop, back off, and read the
@@ -70,6 +77,10 @@ public class ShooterTest extends NextOpMode {
     public ShooterTest(Robot robot) {
         super(robot, BulkReadHook.INSTANCE);
         this.robot = robot;
+
+        // Send telemetry to Panels as well as the Driver Station. NextFTC dedupes backends and
+        // Panels hands back the same wrapper every time, so re-registering per OpMode is safe.
+        Telemetry.addBackend(PanelsTelemetry.INSTANCE.getFtcTelemetry());
 
         driver = new CommandGamepad(gamepad1);
         bindControls();
@@ -124,44 +135,45 @@ public class ShooterTest extends NextOpMode {
 
     @Override
     public void periodic() {
-        telemetry.addLine("flywheel: triggers step power, B stops");
-        telemetry.addLine("turret:   dpad L/R fine, bumpers coarse");
-        telemetry.addLine("hood:     dpad U/D fine, Y/A coarse");
-        telemetry.addLine("marks:    X center, BACK reference");
-        telemetry.addLine();
+        Telemetry.log("flywheel: triggers step power, B stops");
+        Telemetry.log("turret:   dpad L/R fine, bumpers coarse");
+        Telemetry.log("hood:     dpad U/D fine, Y/A coarse");
+        Telemetry.log("marks:    X center, BACK reference");
+        Telemetry.log("");
 
         double rpm = robot.shooter.currentRpm();
-        telemetry.addLine("-- flywheel --");
-        telemetry.addData("commanded power", "%.2f", power);
-        telemetry.addData("applied throttle", "%.2f", robot.shooter.flywheelThrottle());
-        telemetry.addData("measured RPM", "%.0f", rpm);
-        telemetry.addData("current (A)", "%.2f", robot.shooter.flywheelCurrentAmps());
+        Telemetry.log("-- flywheel --");
+        Telemetry.log("commanded power", String.format("%.2f", power));
+        Telemetry.log("applied throttle", String.format("%.2f", robot.shooter.flywheelThrottle()));
+        Telemetry.log("measured RPM", String.format("%.0f", rpm));
+        Telemetry.log("current (A)", String.format("%.2f", robot.shooter.flywheelCurrentAmps()));
         if (Math.abs(rpm) > 1) {
-            telemetry.addData("implied kV (power/RPM)", "%.8f", power / rpm);
+            Telemetry.log("implied kV (power/RPM)", String.format("%.8f", power / rpm));
         } else {
-            telemetry.addData("implied kV (power/RPM)", "waiting for RPM");
+            Telemetry.log("implied kV (power/RPM)", "waiting for RPM");
         }
-        telemetry.addData("ticks per rev in use", Constants.FLYWHEEL_TICKS_PER_REV);
-        telemetry.addLine();
+        Telemetry.log("ticks per rev in use", Constants.FLYWHEEL_TICKS_PER_REV);
+        Telemetry.log("");
 
-        telemetry.addLine("-- turret --");
-        telemetry.addData("position", "%.4f", turretPosition);
-        telemetry.addData("center mark", centerMark == null ? "unset" : format(centerMark));
-        telemetry.addData("reference mark", referenceMark == null ? "unset" : format(referenceMark));
+        Telemetry.log("-- turret --");
+        Telemetry.log("turret position", String.format("%.4f", turretPosition));
+        Telemetry.log("center mark", centerMark == null ? "unset" : format(centerMark));
+        Telemetry.log("reference mark", referenceMark == null ? "unset" : format(referenceMark));
         if (centerMark != null && referenceMark != null) {
-            telemetry.addData("position delta", "%.4f", referenceMark - centerMark);
-            telemetry.addLine("TURRET_POSITION_PER_DEG = delta / measured degrees");
+            double delta = referenceMark - centerMark;
+            Telemetry.log("position delta", String.format("%.4f", delta));
+            Telemetry.log("predicted angle between marks (deg)",
+                    String.format("%.1f", delta / Constants.turretPositionPerDeg()));
+            Telemetry.log("compare with protractor; if off, tune TURRET_SERVO_TRAVEL_DEG");
         }
-        telemetry.addData("angle per current constants (deg)", "%.1f",
-                Shooter.degreesForTurretPosition(turretPosition));
-        telemetry.addData("center position in use", "%.4f", Constants.TURRET_CENTER_POSITION);
-        telemetry.addData("position per deg in use", "%.6f", Constants.TURRET_POSITION_PER_DEG);
-        telemetry.addLine();
+        Telemetry.log("angle per current constants (deg)", String.format("%.1f", Shooter.degreesForTurretPosition(turretPosition)));
+        Telemetry.log("center position in use", String.format("%.4f", Constants.TURRET_CENTER_POSITION));
+        Telemetry.log("position per deg in use", String.format("%.6f", Constants.turretPositionPerDeg()));
+        Telemetry.log("");
 
-        telemetry.addLine("-- hood --");
-        telemetry.addData("position", "%.4f", hoodPosition);
-        telemetry.addData("range in use", "%.2f .. %.2f",
-                Constants.HOOD_MIN_POSITION, Constants.HOOD_MAX_POSITION);
+        Telemetry.log("-- hood --");
+        Telemetry.log("hood position", String.format("%.4f", hoodPosition));
+        Telemetry.log("range in use", String.format("%.2f .. %.2f", Constants.HOOD_MIN_POSITION, Constants.HOOD_MAX_POSITION));
     }
 
     @Override

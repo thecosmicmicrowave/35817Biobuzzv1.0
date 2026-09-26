@@ -8,6 +8,9 @@ import com.pedropathing.drivetrain.DrivePowers;
 import com.pedropathing.follower.ManualDrive;
 import com.pedropathing.ivy.commands.Commands;
 
+import com.bylazar.telemetry.PanelsTelemetry;
+
+import dev.nextftc.robot.Telemetry;
 import dev.nextftc.robot.opmode.BulkReadHook;
 import dev.nextftc.robot.opmode.NextOpMode;
 import dev.nextftc.robot.opmode.NextTeleop;
@@ -34,6 +37,10 @@ public class MainTeleOp extends NextOpMode {
     public MainTeleOp(Robot robot) {
         super(robot, BulkReadHook.INSTANCE);
         this.robot = robot;
+
+        // Send telemetry to Panels as well as the Driver Station. NextFTC dedupes backends and
+        // Panels hands back the same wrapper every time, so re-registering per OpMode is safe.
+        Telemetry.addBackend(PanelsTelemetry.INSTANCE.getFtcTelemetry());
 
         robot.initFollower(hardwareMap, Constants.DEFAULT_START_POSE);
         robot.reset();
@@ -93,14 +100,13 @@ public class MainTeleOp extends NextOpMode {
     }
 
     private void pushTelemetry() {
-        telemetry.addData("distance to goal", robot.shooter.distanceToGoal());
-        telemetry.addData("turret (deg)", robot.shooter.commandedTurretDeg());
-        telemetry.addData("hood", robot.shooter.commandedHoodPosition());
-        telemetry.addData("flywheel target / actual",
-                robot.shooter.targetRpm() + " / " + robot.shooter.currentRpm());
-        telemetry.addData("at speed", robot.shooter.atSpeed());
-        telemetry.addData("ready to shoot", robot.shooter.readyToShoot());
-        telemetry.addData("gate open", robot.intake.isGateOpen());
-        telemetry.addData("flower deployed", robot.intake.isFlowerDeployed());
+        Telemetry.log("distance to goal", robot.shooter.distanceToGoal());
+        Telemetry.log("turret (deg)", robot.shooter.commandedTurretDeg());
+        Telemetry.log("hood", robot.shooter.commandedHoodPosition());
+        Telemetry.log("flywheel target / actual", robot.shooter.targetRpm() + " / " + robot.shooter.currentRpm());
+        Telemetry.log("at speed", robot.shooter.atSpeed());
+        Telemetry.log("ready to shoot", robot.shooter.readyToShoot());
+        Telemetry.log("gate open", robot.intake.isGateOpen());
+        Telemetry.log("flower deployed", robot.intake.isFlowerDeployed());
     }
 }
