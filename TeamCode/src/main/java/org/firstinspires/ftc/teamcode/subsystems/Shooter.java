@@ -165,6 +165,26 @@ public class Shooter implements Mechanism {
         return armed;
     }
 
+    /** Commanded motor power, whatever control mode produced it. */
+    public double flywheelThrottle() {
+        return flywheel.getThrottle();
+    }
+
+    /**
+     * Cuts flywheel power immediately, without going through a command. For OpMode teardown,
+     * where the scheduler is being reset and a command would never execute.
+     */
+    public void coastFlywheel() {
+        targetRpm = 0;
+        armed = false;
+        flywheel.setThrottle(0);
+    }
+
+    /** Flywheel current draw in amps. A stalled or rubbing flywheel shows up here first. */
+    public double flywheelCurrentAmps() {
+        return flywheel.getCurrent().into(Units.Amperes);
+    }
+
     /**
      * Whether the turret has had time to reach its commanded angle. Positional servos report
      * nothing, so this is elapsed time since the last large commanded move — if the turret is
@@ -245,6 +265,22 @@ public class Shooter implements Mechanism {
             targetRpm = 0;
             applyFlywheel();
         });
+    }
+
+    /**
+     * Open-loop flywheel power, bypassing the velocity controller completely.
+     *
+     * <p>For bring-up: proves the motor spins and the encoder reads before any gain is trusted.
+     * Setting throttle switches the motor's control mode away from velocity, so the untuned
+     * velocity loop cannot interfere.
+     *
+     * <p>Infinite and requiring this mechanism, so while it is scheduled {@code autoAim()} stays
+     * suspended and the turret and hood are never written — the point on a robot whose turret
+     * calibration is still a guess.
+     */
+    public Command flywheelPower(DoubleSupplier power) {
+        return infinite(() -> flywheel.setThrottle(
+                Constants.clamp(power.getAsDouble(), -1.0, 1.0)));
     }
 
     /** Driver turret nudge. Preempts {@code autoAim()}, which resumes when this is released. */
