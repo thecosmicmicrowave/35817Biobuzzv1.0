@@ -66,6 +66,7 @@ public class ShooterTest extends NextOpMode {
 
     private final Robot robot;
     private final CommandGamepad driver;
+    private final CommandGamepad operator;
 
     private double power = 0;
 
@@ -86,6 +87,7 @@ public class ShooterTest extends NextOpMode {
         Telemetry.addBackend(PanelsTelemetry.INSTANCE.getFtcTelemetry());
 
         driver = new CommandGamepad(gamepad1);
+        operator = new CommandGamepad(gamepad2);
         bindControls();
     }
 
@@ -112,6 +114,16 @@ public class ShooterTest extends NextOpMode {
         // Calibration marks.
         driver.x().onTrue(Commands.instant(() -> centerMark = turretPosition));
         driver.back().onTrue(Commands.instant(() -> referenceMark = turretPosition));
+
+        // Feeding, on gamepad2 since gamepad1 is full. Without these nothing ever moves an
+        // artifact into the flywheel, so a spinning flywheel alone cannot show whether it shoots.
+        // These use the intake mechanism, which the held manualControl command does not own, so
+        // they run alongside it. The gate is closed again on release: the intake's default command
+        // only stops the motors and deliberately leaves the servos where they are.
+        operator.leftBumper().whileTrue(robot.intake.intake());
+        operator.rightBumper().whileTrue(robot.intake.volley())
+                .onFalse(robot.intake.closeGate());
+        operator.b().whileTrue(robot.intake.eject());
     }
 
     /**
@@ -147,6 +159,8 @@ public class ShooterTest extends NextOpMode {
 
     @Override
     public void start() {
+        // Start from a known gate position rather than wherever the servo was left.
+        robot.intake.closeGate().schedule();
         lastLoopNanos = System.nanoTime();
         // Scheduled once and never cancelled, so it owns the shooter for the whole OpMode.
         robot.shooter.manualControl(
@@ -164,6 +178,7 @@ public class ShooterTest extends NextOpMode {
         Telemetry.log("turret:   left stick X, dpad L/R fine, bumpers coarse");
         Telemetry.log("hood:     dpad U/D fine, Y/A coarse");
         Telemetry.log("marks:    X center, BACK reference");
+        Telemetry.log("gamepad2: LB intake, RB hold to feed/shoot, B eject");
         Telemetry.log("");
 
         double rpm = robot.shooter.currentRpm();

@@ -166,7 +166,7 @@ public final class Constants {
     public static double TURRET_TRIM_STEP_DEG = 1.0;
 
     /** Turret speed at full stick in the Shooter Test, in turret degrees per second. */
-    public static double TURRET_STICK_DEG_PER_SEC = 90;
+    public static double TURRET_STICK_DEG_PER_SEC = 250;
 
     /** Stick input smaller than this is ignored, so a resting stick does not creep the turret. */
     public static double STICK_DEADZONE = 0.05;
