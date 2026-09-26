@@ -68,6 +68,9 @@ public class ShooterTest extends NextOpMode {
     private final CommandGamepad driver;
 
     private double power = 0;
+
+    /** Time of the previous loop, for scaling stick input by elapsed time. */
+    private long lastLoopNanos;
     private double turretPosition = Constants.TURRET_CENTER_POSITION;
     private double hoodPosition = Constants.HOOD_STOWED_POSITION;
 
@@ -111,6 +114,25 @@ public class ShooterTest extends NextOpMode {
         driver.back().onTrue(Commands.instant(() -> referenceMark = turretPosition));
     }
 
+    /**
+     * Left stick X moves the turret continuously. Scaled by elapsed time so the turret turns at
+     * TURRET_STICK_DEG_PER_SEC regardless of loop rate, and converted from turret degrees to raw
+     * servo position through the gear ratio so the speed means the same thing at the turret.
+     */
+    private void driveTurretFromStick() {
+        long now = System.nanoTime();
+        // Capped so a stalled loop cannot turn into one large jump.
+        double dt = Math.min((now - lastLoopNanos) / 1e9, 0.1);
+        lastLoopNanos = now;
+
+        double stick = gamepad1.left_stick_x;
+        if (Math.abs(stick) < Constants.STICK_DEADZONE) {
+            return;
+        }
+        double degrees = stick * Constants.TURRET_STICK_DEG_PER_SEC * dt;
+        adjustTurret(degrees * Constants.turretPositionPerDeg());
+    }
+
     private void adjustPower(double delta) {
         power = Constants.clamp(power + delta, -1.0, 1.0);
     }
@@ -125,6 +147,7 @@ public class ShooterTest extends NextOpMode {
 
     @Override
     public void start() {
+        lastLoopNanos = System.nanoTime();
         // Scheduled once and never cancelled, so it owns the shooter for the whole OpMode.
         robot.shooter.manualControl(
                 () -> power,
@@ -135,8 +158,10 @@ public class ShooterTest extends NextOpMode {
 
     @Override
     public void periodic() {
+        driveTurretFromStick();
+
         Telemetry.log("flywheel: triggers step power, B stops");
-        Telemetry.log("turret:   dpad L/R fine, bumpers coarse");
+        Telemetry.log("turret:   left stick X, dpad L/R fine, bumpers coarse");
         Telemetry.log("hood:     dpad U/D fine, Y/A coarse");
         Telemetry.log("marks:    X center, BACK reference");
         Telemetry.log("");

@@ -89,7 +89,7 @@ public final class Constants {
      * needs to be depends on whether the servos are mounted mirrored.
      */
     public static final boolean TURRET_LEFT_REVERSED = false;
-    public static final boolean TURRET_RIGHT_REVERSED = true;
+    public static final boolean TURRET_RIGHT_REVERSED = false;
 
     public static final double TURRET_SERVO_GEAR_TEETH = 60;
     public static final double TURRET_SHAFT_INPUT_GEAR_TEETH = 20;
@@ -164,6 +164,12 @@ public final class Constants {
 
     /** Degrees the turret trim shifts per press of the trim controls. */
     public static double TURRET_TRIM_STEP_DEG = 1.0;
+
+    /** Turret speed at full stick in the Shooter Test, in turret degrees per second. */
+    public static double TURRET_STICK_DEG_PER_SEC = 90;
+
+    /** Stick input smaller than this is ignored, so a resting stick does not creep the turret. */
+    public static double STICK_DEADZONE = 0.05;
 
     // ---------------------------------------------------------------- hood
 
