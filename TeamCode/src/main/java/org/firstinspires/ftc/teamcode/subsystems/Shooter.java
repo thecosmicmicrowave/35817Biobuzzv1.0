@@ -77,6 +77,14 @@ public class Shooter implements Mechanism {
     private double settledTargetDeg = Constants.TURRET_CENTER_DEG;
     private long lastTurretMoveMs = 0;
 
+    /**
+     * How long the current move is expected to take. Scales with the size of the move: at
+     * roughly 755 degrees/s a small correction settles almost instantly, but a half-turn swing
+     * takes a meaningful fraction of a second, and a fixed allowance would either stall every
+     * small correction or fire mid-swing on a large one.
+     */
+    private double settleDurationMs = 0;
+
     /** True while {@link #manualTurret(DoubleSupplier)} owns the turret, suppressing tracking. */
     private boolean manualOverride = false;
 
@@ -191,7 +199,7 @@ public class Shooter implements Mechanism {
      * bumped or stalls, this still reads true.
      */
     public boolean turretSettled() {
-        return System.currentTimeMillis() - lastTurretMoveMs >= Constants.TURRET_SETTLE_MS;
+        return System.currentTimeMillis() - lastTurretMoveMs >= settleDurationMs;
     }
 
     public boolean readyToShoot() {
@@ -359,7 +367,10 @@ public class Shooter implements Mechanism {
         // Measured against the angle the settle timer was started for, not against the previous
         // call: autoAim() nudges the turret a fraction of a degree per loop, so a per-call
         // comparison would never exceed the epsilon and the turret would always read settled.
-        if (Math.abs(degrees - settledTargetDeg) >= Constants.TURRET_MOVE_EPSILON_DEG) {
+        double moveDeg = Math.abs(degrees - settledTargetDeg);
+        if (moveDeg >= Constants.TURRET_MOVE_EPSILON_DEG) {
+            settleDurationMs = Constants.TURRET_SETTLE_BASE_MS
+                    + moveDeg * Constants.TURRET_SETTLE_MS_PER_DEG;
             settledTargetDeg = degrees;
             lastTurretMoveMs = System.currentTimeMillis();
         }

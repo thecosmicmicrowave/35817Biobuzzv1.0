@@ -25,24 +25,87 @@ public final class Constants {
     /** Fallback starting pose for OpModes that do not specify one. */
     public static final Pose DEFAULT_START_POSE = new Pose(0, 0, 0);
 
-    // ---------------------------------------------------------------- turret
-
-    /** Turret travel limits, in degrees relative to robot forward. */
-    public static final double TURRET_MIN_DEG = -90;
-    public static final double TURRET_MAX_DEG = 90;
-    public static final double TURRET_CENTER_DEG = 0;
-
-    /** Servo position commanded at {@link #TURRET_CENTER_DEG}. */
-    public static final double TURRET_CENTER_POSITION = 0.5;
-
-    /** Servo position change per degree of turret rotation. */
-    public static final double TURRET_POSITION_PER_DEG = 0.5 / 90.0;
+    // ---------------------------------------------------------------- turret geometry
+    //
+    // Two SWYFT Balance servos, each with a 60t gear, both driving a 20t gear on a shared shaft.
+    // A 65t gear on that shaft drives the 169t turret ring gear:
+    //
+    //     turret degrees per servo degree = (60 / 20) * (65 / 169) = 15 / 13 ~= 1.154
+    //
+    // The turret turns slightly MORE than the servo. Everything below is derived from these
+    // numbers, so a hardware change only means editing the teeth counts or the servo travel.
 
     /**
-     * How long after a large commanded move the turret is assumed to have arrived.
-     * Positional servos give no feedback, so this is an assumption, not a measurement.
+     * Rotation of one turret servo across its full 0..1 position range.
+     *
+     * <p>SWYFT servos ship at 270 degrees. 320 requires reprogramming each servo with the SWYFT
+     * Servo Programmer. If these servos are still at 270, set this to 270 — at 320 the turret
+     * reaches every bearing, but at 270 it only covers +/-156 degrees and has a blind spot behind
+     * the robot.
+     *
+     * <p>The derived calibration also assumes the servo's full travel maps onto the SDK's 0..1
+     * position range. SWYFT does not publish its PWM pulse range, so check this with the Shooter
+     * Test: if the measured angle disagrees with the inferred angle by a constant factor, the
+     * PWM range is not reaching full travel.
      */
-    public static final double TURRET_SETTLE_MS = 150;
+    public static final double TURRET_SERVO_TRAVEL_DEG = 320;
+
+    public static final double TURRET_SERVO_GEAR_TEETH = 60;
+    public static final double TURRET_SHAFT_INPUT_GEAR_TEETH = 20;
+    public static final double TURRET_SHAFT_OUTPUT_GEAR_TEETH = 65;
+    public static final double TURRET_RING_GEAR_TEETH = 169;
+
+    /** Turret degrees per servo degree. 15/13 for the current gearing. */
+    public static final double TURRET_DEG_PER_SERVO_DEG =
+            (TURRET_SERVO_GEAR_TEETH / TURRET_SHAFT_INPUT_GEAR_TEETH)
+                    * (TURRET_SHAFT_OUTPUT_GEAR_TEETH / TURRET_RING_GEAR_TEETH);
+
+    /** Total turret rotation across the servo's full range. ~369.2 degrees at 320 degrees of servo travel. */
+    public static final double TURRET_TRAVEL_DEG = TURRET_SERVO_TRAVEL_DEG * TURRET_DEG_PER_SERVO_DEG;
+
+    /** Servo position change per degree of turret rotation. */
+    public static final double TURRET_POSITION_PER_DEG = 1.0 / TURRET_TRAVEL_DEG;
+
+    // ---------------------------------------------------------------- turret calibration
+
+    public static final double TURRET_CENTER_DEG = 0;
+
+    /**
+     * Servo position at which the turret points straight forward. Depends on how the gears were
+     * meshed during assembly, not on the gear ratio — find it with the Shooter Test.
+     */
+    public static final double TURRET_CENTER_POSITION = 0.5;
+
+    /** Kept clear of each physical end of travel so the servos never stall against a stop. */
+    public static final double TURRET_LIMIT_MARGIN_DEG = 5.0;
+
+    /**
+     * Turret travel limits, in degrees relative to robot forward. Derived from where the servo's
+     * physical ends of travel land given the center position, pulled in by the margin, and capped
+     * at +/-180 since no bearing needs more. At 320 degrees of servo travel and a centered 0.5,
+     * this is the full +/-180.
+     */
+    public static final double TURRET_MIN_DEG = Math.max(-180,
+            TURRET_CENTER_DEG - TURRET_CENTER_POSITION / TURRET_POSITION_PER_DEG
+                    + TURRET_LIMIT_MARGIN_DEG);
+    public static final double TURRET_MAX_DEG = Math.min(180,
+            TURRET_CENTER_DEG + (1 - TURRET_CENTER_POSITION) / TURRET_POSITION_PER_DEG
+                    - TURRET_LIMIT_MARGIN_DEG);
+
+    // ---------------------------------------------------------------- turret timing
+
+    /**
+     * Fixed settle allowance for any turret move: acceleration, deceleration, and gear backlash.
+     * Positional servos give no feedback, so settling is an estimate, never a measurement.
+     */
+    public static final double TURRET_SETTLE_BASE_MS = 60;
+
+    /**
+     * Additional settle allowance per degree of turret travel. A SWYFT Balance runs 109 RPM
+     * unloaded, which is 654 degrees/s at the servo and ~755 degrees/s at the turret — about
+     * 1.3 ms per turret degree. 2.0 leaves margin for the turret's load.
+     */
+    public static final double TURRET_SETTLE_MS_PER_DEG = 2.0;
 
     /** A commanded change smaller than this does not restart the settle timer. */
     public static final double TURRET_MOVE_EPSILON_DEG = 2.0;
