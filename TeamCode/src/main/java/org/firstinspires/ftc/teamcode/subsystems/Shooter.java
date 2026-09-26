@@ -283,6 +283,33 @@ public class Shooter implements Mechanism {
                 Constants.clamp(power.getAsDouble(), -1.0, 1.0)));
     }
 
+    /**
+     * Raw servo positions for the turret and hood, bypassing the degree mapping in
+     * {@link #turretTo(double)} — that mapping is exactly what calibration establishes, so it
+     * cannot be used to calibrate itself.
+     *
+     * <p>Infinite and requiring this mechanism, so while scheduled it owns the shooter:
+     * {@code autoAim()} stays suspended and nothing else writes these servos.
+     */
+    public Command calibrateServos(DoubleSupplier turretPosition, DoubleSupplier hoodPosition) {
+        return infinite(() -> {
+            double turret = Constants.clamp(turretPosition.getAsDouble(), 0, 1);
+            // turretRight is reversed in the constructor, so both take the same value.
+            turretLeft.setPosition(turret);
+            turretRight.setPosition(turret);
+            hood.setPosition(Constants.clamp(hoodPosition.getAsDouble(), 0, 1));
+        });
+    }
+
+    /**
+     * The turret angle the current constants would infer from a raw servo position. Lets a
+     * calibration OpMode show whether the constants agree with the physical turret yet.
+     */
+    public static double degreesForTurretPosition(double position) {
+        return Constants.TURRET_CENTER_DEG
+                + (position - Constants.TURRET_CENTER_POSITION) / Constants.TURRET_POSITION_PER_DEG;
+    }
+
     /** Driver turret nudge. Preempts {@code autoAim()}, which resumes when this is released. */
     public Command manualTurret(DoubleSupplier input) {
         return infinite(() -> {
