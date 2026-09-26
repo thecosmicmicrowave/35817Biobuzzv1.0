@@ -1,3 +1,19 @@
+// Sloth's Load plugin, which enables hot reloading code onto the robot without a full
+// reinstall. The plugin version must match the dev.frozenmilk.sinister:Sloth library version
+// declared in build.dependencies.gradle.
+buildscript {
+    repositories {
+        mavenCentral()
+        google()
+        maven {
+            url "https://repo.dairy.foundation/releases"
+        }
+    }
+    dependencies {
+        classpath "dev.frozenmilk:Load:0.3.2"
+    }
+}
+
 apply plugin: 'com.android.application'
 
 //
@@ -15,6 +31,8 @@ apply plugin: 'com.android.application'
 // Include common definitions from above.
 apply from: '../build.common.gradle'
 apply from: '../build.dependencies.gradle'
+
+apply plugin: 'dev.frozenmilk.sinister.sloth.load'
 
 android {
     namespace = 'org.firstinspires.ftc.teamcode'
