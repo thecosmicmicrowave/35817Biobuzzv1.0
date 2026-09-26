@@ -61,11 +61,35 @@ public final class Constants {
      * the robot.
      *
      * <p>The derived calibration also assumes the servo's full travel maps onto the SDK's 0..1
-     * position range. SWYFT does not publish its PWM pulse range, so check this with the Shooter
-     * Test: if the measured angle disagrees with the inferred angle by a constant factor, the
-     * PWM range is not reaching full travel.
+     * position range, which only holds when {@link #TURRET_SERVO_PWM_MIN_US} and
+     * {@link #TURRET_SERVO_PWM_MAX_US} match what the servo was programmed with.
      */
     public static double TURRET_SERVO_TRAVEL_DEG = 320;
+
+    /**
+     * Pulse widths the turret servos were programmed to span their full travel with, from the
+     * Min Signal and Max Signal fields of the SWYFT Servo Programmer.
+     *
+     * <p>These must match the programmer. The SDK's default servo range is 600-2400 us, so left
+     * at the default a servo programmed for 500-2500 us only reaches 90% of its travel: 288 of
+     * 320 degrees, which after gearing leaves the turret about 28 degrees short of a full
+     * rotation, and makes every commanded angle land ~10% short.
+     *
+     * <p>Final rather than tunable: these are applied once when the servos are configured and
+     * describe how the hardware was programmed, not something to tweak live.
+     */
+    public static final double TURRET_SERVO_PWM_MIN_US = 500;
+    public static final double TURRET_SERVO_PWM_MAX_US = 2500;
+
+    /**
+     * Software direction for each turret servo. The two servos must end up turning the turret the
+     * same way, and their net direction is this flag combined with the Reverse direction toggle
+     * in the SWYFT Servo Programmer — a servo reversed in both places is back to forward. If both
+     * servos were programmed identically, at most one of these should be true, and whether one
+     * needs to be depends on whether the servos are mounted mirrored.
+     */
+    public static final boolean TURRET_LEFT_REVERSED = false;
+    public static final boolean TURRET_RIGHT_REVERSED = true;
 
     public static final double TURRET_SERVO_GEAR_TEETH = 60;
     public static final double TURRET_SHAFT_INPUT_GEAR_TEETH = 20;
@@ -144,7 +168,7 @@ public final class Constants {
     // ---------------------------------------------------------------- hood
 
     public static double HOOD_MIN_POSITION = 0.0;
-    public static double HOOD_MAX_POSITION = 1.0;
+    public static double HOOD_MAX_POSITION = 0.4;
     public static double HOOD_STOWED_POSITION = 0.0;
 
     /** Hood position change per press of the trim controls. */

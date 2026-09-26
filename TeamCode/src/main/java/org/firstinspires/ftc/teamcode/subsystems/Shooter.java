@@ -93,8 +93,19 @@ public class Shooter implements Mechanism {
 
     public Shooter(Supplier<Pose> poseSupplier) {
         this.poseSupplier = poseSupplier;
-        turretRight.setDirection(NextMotor.Direction.REVERSE);
+        configureTurretServo(turretLeft, Constants.TURRET_LEFT_REVERSED);
+        configureTurretServo(turretRight, Constants.TURRET_RIGHT_REVERSED);
         applyTuning();
+    }
+
+    /**
+     * Matches a turret servo's pulse range to what it was programmed with, and sets its
+     * direction. Both setters defer until the lazy hardware resolves, so this is safe here while
+     * the robot is being constructed during NextFTC's classpath scan.
+     */
+    private static void configureTurretServo(NextServo servo, boolean reversed) {
+        servo.setPwmRange(Constants.TURRET_SERVO_PWM_MIN_US, Constants.TURRET_SERVO_PWM_MAX_US);
+        servo.setDirection(reversed ? NextMotor.Direction.REVERSE : NextMotor.Direction.FORWARD);
     }
 
     /**
@@ -318,7 +329,7 @@ public class Shooter implements Mechanism {
             flywheel.setThrottle(Constants.clamp(power.getAsDouble(), -1.0, 1.0));
 
             double turret = Constants.clamp(turretPosition.getAsDouble(), 0, 1);
-            // turretRight is reversed in the constructor, so both take the same value.
+            // Directions are set in the constructor, so both take the same value.
             turretLeft.setPosition(turret);
             turretRight.setPosition(turret);
 
@@ -402,7 +413,7 @@ public class Shooter implements Mechanism {
                 + (degrees - Constants.TURRET_CENTER_DEG) * Constants.turretPositionPerDeg();
         position = Constants.clamp(position, 0, 1);
 
-        // turretRight is reversed in the constructor, so both take the same commanded position.
+        // Directions are set in the constructor, so both take the same commanded position.
         turretLeft.setPosition(position);
         turretRight.setPosition(position);
     }
