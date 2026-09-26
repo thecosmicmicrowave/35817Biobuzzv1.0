@@ -268,35 +268,30 @@ public class Shooter implements Mechanism {
     }
 
     /**
-     * Open-loop flywheel power, bypassing the velocity controller completely.
+     * Direct open-loop control of all three shooter actuators, for bring-up and calibration.
      *
-     * <p>For bring-up: proves the motor spins and the encoder reads before any gain is trusted.
-     * Setting throttle switches the motor's control mode away from velocity, so the untuned
-     * velocity loop cannot interfere.
-     *
-     * <p>Infinite and requiring this mechanism, so while it is scheduled {@code autoAim()} stays
-     * suspended and the turret and hood are never written — the point on a robot whose turret
-     * calibration is still a guess.
-     */
-    public Command flywheelPower(DoubleSupplier power) {
-        return infinite(() -> flywheel.setThrottle(
-                Constants.clamp(power.getAsDouble(), -1.0, 1.0)));
-    }
-
-    /**
-     * Raw servo positions for the turret and hood, bypassing the degree mapping in
-     * {@link #turretTo(double)} — that mapping is exactly what calibration establishes, so it
-     * cannot be used to calibrate itself.
+     * <p>The flywheel runs on raw throttle rather than a velocity setpoint, which switches the
+     * motor's control mode away from velocity so the untuned velocity loop cannot interfere.
+     * The turret and hood take raw servo positions, bypassing the degree mapping in
+     * {@link #turretTo(double)} — that mapping is what calibration establishes, so it cannot be
+     * used to find itself.
      *
      * <p>Infinite and requiring this mechanism, so while scheduled it owns the shooter:
-     * {@code autoAim()} stays suspended and nothing else writes these servos.
+     * {@code autoAim()} stays suspended and nothing else writes these actuators. That matters
+     * during bring-up, because {@code autoAim()} is the default command and would otherwise
+     * drive the turret to its computed bearing using calibration constants that are still
+     * placeholders.
      */
-    public Command calibrateServos(DoubleSupplier turretPosition, DoubleSupplier hoodPosition) {
+    public Command manualControl(
+            DoubleSupplier power, DoubleSupplier turretPosition, DoubleSupplier hoodPosition) {
         return infinite(() -> {
+            flywheel.setThrottle(Constants.clamp(power.getAsDouble(), -1.0, 1.0));
+
             double turret = Constants.clamp(turretPosition.getAsDouble(), 0, 1);
             // turretRight is reversed in the constructor, so both take the same value.
             turretLeft.setPosition(turret);
             turretRight.setPosition(turret);
+
             hood.setPosition(Constants.clamp(hoodPosition.getAsDouble(), 0, 1));
         });
     }
