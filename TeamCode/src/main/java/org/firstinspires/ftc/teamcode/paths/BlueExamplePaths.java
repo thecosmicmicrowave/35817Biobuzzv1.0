@@ -7,8 +7,7 @@ import com.pedropathing.api.PoseFactory;
 import com.pedropathing.math.Pose;
 import com.pedropathing.paths.Path;
 
-// Stand-in for a Pedro visualizer export, handwritten in the exact format the visualizer's
-// "paths only" export produces. Replace it with a real export; do not hand-edit real exports.
+// Fake visualizer export, real format. Replace with real export. Never hand-edit real one.
 public class BlueExamplePaths {
     private final PoseFactory poseFactory = PoseFactory.degrees();
 

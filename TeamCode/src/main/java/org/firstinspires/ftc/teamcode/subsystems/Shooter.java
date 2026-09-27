@@ -17,32 +17,19 @@ import dev.nextftc.robot.Mechanism;
 import dev.nextftc.units.Units;
 
 /**
- * Flywheel, hood, and turret.
+ * Flywheel, hood, turret.
  *
- * <p>Aiming is pose-driven: {@link #autoAim()} runs as the default command and recomputes the
- * turret angle and hood position from the current Pedro pose every loop, so the turret is
- * already tracking the goal by the time the driver asks for a shot.
+ * <p>autoAim() default command. Aim turret + hood from pose every loop.
  *
- * <p>{@link #targetRpm} is the single source of truth for flywheel speed, and every command
- * that changes it pushes it to the motor through {@link #applyFlywheel()}. That write is
- * idempotent, so {@code autoAim()} refreshing it every loop does not fight the spin-up
- * commands.
- *
- * <p>The spin-up commands must write the motor themselves rather than leaving it to
- * {@code autoAim()}: Ivy's {@code Sequential} unions its children's requirements and holds
- * them for the whole sequence, so a shot sequence owns the shooter from start to finish and
- * the default command is suspended throughout. If {@code autoAim()} were the only writer, the
- * flywheel would never spin up during a shot and every shot would hit its timeout.
+ * <p>targetRpm = one true flywheel speed. Every writer push it through applyFlywheel().
+ * Spin-up commands write motor too: shot sequence hold shooter whole time, autoAim() no run.
  */
 public class Shooter implements Mechanism {
 
-    /**
-     * Constructed with an explicit angle-per-count. NextFTC defaults it to one radian per
-     * encoder tick, which would make every velocity reading meaningless.
-     */
+    /** Real angle-per-tick. NextFTC default = 1 radian per tick = garbage RPM. */
     private final NextMotor flywheel = new NextMotor(
             "flywheel", Units.Rotations.of(1.0 / Constants.FLYWHEEL_TICKS_PER_REV));
-    // Not final: replaced at the start of every OpMode by bindServos().
+    // Not final. bindServos() replace each OpMode.
     private NextServo hood;
     private NextServo turretLeft;
     private NextServo turretRight;
@@ -53,45 +40,31 @@ public class Shooter implements Mechanism {
     private final Debouncer atSpeedDebouncer =
             new Debouncer(Constants.AT_SPEED_DEBOUNCE_SECONDS, Debouncer.DebounceType.RISING);
 
-    /** Single source of truth for flywheel speed. Pushed to the motor by {@link #applyFlywheel()}. */
+    /** Flywheel speed. Only truth. */
     private double targetRpm = 0;
 
-    /** When armed, {@code autoAim()} keeps {@link #targetRpm} synced to the distance table. */
+    /** Armed: autoAim() track RPM from distance table. */
     private boolean armed = false;
 
     private double commandedTurretDeg = Constants.TURRET_CENTER_DEG;
     private double commandedHoodPosition = Constants.HOOD_STOWED_POSITION;
     private boolean atSpeed = false;
 
-    /**
-     * Driver trim, applied on top of the pose-derived setpoints inside {@link #autoAim()}.
-     * Trimming adjusts tracking rather than replacing it, so the turret keeps following the
-     * goal and the trim survives across shots.
-     */
+    /** Driver trim. Added on top of tracking. Stay across shots. */
     private double turretOffsetDeg = 0;
     private double hoodOffset = 0;
 
-    /**
-     * Turret settle tracking. {@code settledTargetDeg} is the angle the timer was last started
-     * for; the timer restarts once the commanded angle has drifted a meaningful distance from
-     * it. Comparing against the per-call delta instead would never trip, because
-     * {@link #autoAim()} moves the turret a fraction of a degree per loop.
-     */
+    /** Angle settle timer started for. Timer restart when turret drift past epsilon. */
     private double settledTargetDeg = Constants.TURRET_CENTER_DEG;
     private long lastTurretMoveMs = 0;
 
-    /**
-     * How long the current move is expected to take. Scales with the size of the move: at
-     * roughly 755 degrees/s a small correction settles almost instantly, but a half-turn swing
-     * takes a meaningful fraction of a second, and a fixed allowance would either stall every
-     * small correction or fire mid-swing on a large one.
-     */
+    /** Time current move need. Big move = more time. */
     private double settleDurationMs = 0;
 
-    /** True while {@link #manualTurret(DoubleSupplier)} owns the turret, suppressing tracking. */
+    /** True: manualTurret() own turret. Tracking off. */
     private boolean manualOverride = false;
 
-    /** Ticks-per-rev the flywheel's encoder scaling was last built from. */
+    /** Ticks-per-rev encoder scaling last built from. */
     private double appliedTicksPerRev = Constants.FLYWHEEL_TICKS_PER_REV;
 
     public Shooter(Supplier<Pose> poseSupplier, Supplier<Alliance> allianceSupplier) {
@@ -102,17 +75,10 @@ public class Shooter implements Mechanism {
     }
 
     /**
-     * Builds fresh servo objects for the hood and turret.
+     * Make fresh hood + turret servos. Call every OpMode start.
      *
-     * <p>Must run at the start of every OpMode. At each OpMode start the SDK resets every servo:
-     * {@code LynxController.resetDeviceConfigurationForOpMode()} calls {@code initializeHardware()},
-     * which puts the pulse range back to the 600-2400 us default and disables PWM, and
-     * {@code ServoImpl.resetDeviceConfigurationForOpMode()} puts the direction back to forward.
-     * This mechanism outlives OpModes, so servo objects built once would configure the hardware
-     * only in the first OpMode after the app starts. Fresh {@code NextServo}s re-apply the range
-     * and direction on first use, and have an empty position cache, so their first position write
-     * always reaches the hardware instead of being skipped as unchanged while the servo sits
-     * disabled. Servos do not register in any shared loop, so replacing them leaks nothing.
+     * <p>SDK reset servo range + direction each OpMode. Fresh servo re-apply both, and first
+     * position always send.
      */
     public void bindServos() {
         hood = new NextServo("hood");
@@ -122,25 +88,15 @@ public class Shooter implements Mechanism {
         configureTurretServo(turretRight, Constants.TURRET_RIGHT_REVERSED);
     }
 
-    /**
-     * Matches a turret servo's pulse range to what it was programmed with, and sets its
-     * direction. Both setters defer until the lazy hardware resolves, so this is safe here while
-     * the robot is being constructed during NextFTC's classpath scan.
-     */
+    /** Set turret servo pulse range + direction. Apply when hardware first used. */
     private static void configureTurretServo(NextServo servo, boolean reversed) {
         servo.setPwmRange(Constants.TURRET_SERVO_PWM_MIN_US, Constants.TURRET_SERVO_PWM_MAX_US);
         servo.setDirection(reversed ? NextMotor.Direction.REVERSE : NextMotor.Direction.FORWARD);
     }
 
     /**
-     * Copies tunable constants into the objects that hold their own copies: the motor's velocity
-     * gains, its encoder scaling, and the debouncer. Called every loop so Panels edits to those
-     * constants take effect live — without this, they would be read once at construction and
-     * every later edit would silently do nothing.
-     *
-     * <p>NextFTC defaults every velocity gain to zero, and the velocity loop computes
-     * {@code pid.calculate(...) + ff.calculate(...)}, so with the defaults the flywheel would be
-     * commanded to exactly zero power no matter what setpoint it is given.
+     * Copy tunables into motor gains, encoder scaling, debouncer. Run every loop so Panels
+     * edits work live. NextFTC gains default zero = flywheel get zero power.
      */
     private void applyTuning() {
         MotorVelocityConstants velocity = flywheel.getVelocityConstants();
@@ -151,7 +107,7 @@ public class Shooter implements Mechanism {
         velocity.setKV(Constants.FLYWHEEL_KV);
         velocity.setKA(Constants.FLYWHEEL_KA);
 
-        // Rebuilt only on change, to avoid allocating a new Angle every loop.
+        // Rebuild only on change. No new Angle every loop.
         if (Constants.FLYWHEEL_TICKS_PER_REV != appliedTicksPerRev) {
             flywheel.setAnglePerCount(Units.Rotations.of(1.0 / Constants.FLYWHEEL_TICKS_PER_REV));
             appliedTicksPerRev = Constants.FLYWHEEL_TICKS_PER_REV;
@@ -162,11 +118,7 @@ public class Shooter implements Mechanism {
 
     // ---------------------------------------------------------------- lifecycle
 
-    /**
-     * Returns the shooter to a known state. The robot and its mechanisms are constructed once
-     * at event-loop creation and outlive individual OpMode runs, so cached state has to be
-     * cleared explicitly or it carries over from the previous run.
-     */
+    /** Known state. Clear leftover state from last OpMode. */
     public void reset() {
         armed = false;
         manualOverride = false;
@@ -202,7 +154,7 @@ public class Shooter implements Mechanism {
         return Math.hypot(dx, dy);
     }
 
-    /** Bearing from the robot to the goal, in degrees relative to robot forward. */
+    /** Goal bearing, degrees from robot forward. */
     public double bearingToGoal() {
         Pose pose = poseSupplier.get();
         Alliance alliance = allianceSupplier.get();
@@ -232,31 +184,24 @@ public class Shooter implements Mechanism {
         return armed;
     }
 
-    /** Commanded motor power, whatever control mode produced it. */
+    /** Motor power now. */
     public double flywheelThrottle() {
         return flywheel.getThrottle();
     }
 
-    /**
-     * Cuts flywheel power immediately, without going through a command. For OpMode teardown,
-     * where the scheduler is being reset and a command would never execute.
-     */
+    /** Cut flywheel now, no command. For OpMode end. */
     public void coastFlywheel() {
         targetRpm = 0;
         armed = false;
         flywheel.setThrottle(0);
     }
 
-    /** Flywheel current draw in amps. A stalled or rubbing flywheel shows up here first. */
+    /** Flywheel amps. */
     public double flywheelCurrentAmps() {
         return flywheel.getCurrent().into(Units.Amperes);
     }
 
-    /**
-     * Whether the turret has had time to reach its commanded angle. Positional servos report
-     * nothing, so this is elapsed time since the last large commanded move — if the turret is
-     * bumped or stalls, this still reads true.
-     */
+    /** Turret had time to arrive. Time guess only, servo no report. */
     public boolean turretSettled() {
         return System.currentTimeMillis() - lastTurretMoveMs >= settleDurationMs;
     }
@@ -275,16 +220,12 @@ public class Shooter implements Mechanism {
 
     // ---------------------------------------------------------------- commands
 
-    /**
-     * Default command. Tracks the goal and keeps the flywheel setpoint refreshed. Manual
-     * commands and shot sequences preempt it through the normal requirement conflict, and it
-     * resumes automatically when they finish.
-     */
+    /** Default command. Aim at goal, refresh flywheel. Other commands interrupt, it come back. */
     public Command autoAim() {
         return infinite(() -> {
             double distance = distanceToGoal();
 
-            // Only the turret is surrendered to manual control; the hood keeps tracking.
+            // Manual override take turret only. Hood keep tracking.
             if (!manualOverride) {
                 applyTurret(Constants.clamp(bearingToGoal() + turretOffsetDeg,
                         Constants.turretMinDeg(), Constants.turretMaxDeg()));
@@ -299,7 +240,7 @@ public class Shooter implements Mechanism {
         });
     }
 
-    /** Arms the shooter so {@code autoAim()} tracks the mapped RPM for the current distance. */
+    /** Arm. Spin to table RPM for current distance. */
     public Command spinUp() {
         return instant(() -> {
             armed = true;
@@ -308,7 +249,7 @@ public class Shooter implements Mechanism {
         });
     }
 
-    /** Holds a fixed speed regardless of pose. Used by autonomous and for pit testing. */
+    /** Fixed RPM, ignore pose. */
     public Command spinUpTo(double rpm) {
         return instant(() -> {
             armed = false;
@@ -317,7 +258,7 @@ public class Shooter implements Mechanism {
         });
     }
 
-    /** Drops to idle rather than zero, so the next shot does not wait for a full spin-up. */
+    /** Drop to idle RPM, not zero. Next spin-up faster. */
     public Command idleFlywheel() {
         return instant(() -> {
             armed = false;
@@ -335,19 +276,8 @@ public class Shooter implements Mechanism {
     }
 
     /**
-     * Direct open-loop control of all three shooter actuators, for bring-up and calibration.
-     *
-     * <p>The flywheel runs on raw throttle rather than a velocity setpoint, which switches the
-     * motor's control mode away from velocity so the untuned velocity loop cannot interfere.
-     * The turret and hood take raw servo positions, bypassing the degree mapping in
-     * {@link #turretTo(double)} — that mapping is what calibration establishes, so it cannot be
-     * used to find itself.
-     *
-     * <p>Infinite and requiring this mechanism, so while scheduled it owns the shooter:
-     * {@code autoAim()} stays suspended and nothing else writes these actuators. That matters
-     * during bring-up, because {@code autoAim()} is the default command and would otherwise
-     * drive the turret to its computed bearing using calibration constants that are still
-     * placeholders.
+     * Raw control, for testing. Flywheel raw power. Turret + hood raw servo position, skip degree
+     * math. Own shooter while running, autoAim() off.
      */
     public Command manualControl(
             DoubleSupplier power, DoubleSupplier turretPosition, DoubleSupplier hoodPosition) {
@@ -355,7 +285,7 @@ public class Shooter implements Mechanism {
             flywheel.setThrottle(Constants.clamp(power.getAsDouble(), -1.0, 1.0));
 
             double turret = Constants.clamp(turretPosition.getAsDouble(), 0, 1);
-            // Directions are set in the constructor, so both take the same value.
+            // Directions set in bindServos(). Both get same value.
             turretLeft.setPosition(turret);
             turretRight.setPosition(turret);
 
@@ -363,16 +293,13 @@ public class Shooter implements Mechanism {
         });
     }
 
-    /**
-     * The turret angle the current constants would infer from a raw servo position. Lets a
-     * calibration OpMode show whether the constants agree with the physical turret yet.
-     */
+    /** Turret angle current constants think a raw position is. */
     public static double degreesForTurretPosition(double position) {
         return Constants.TURRET_CENTER_DEG
                 + (position - Constants.TURRET_CENTER_POSITION) / Constants.turretPositionPerDeg();
     }
 
-    /** Driver turret nudge. Preempts {@code autoAim()}, which resumes when this is released. */
+    /** Driver nudge turret. Interrupt autoAim(), it come back on release. */
     public Command manualTurret(DoubleSupplier input) {
         return infinite(() -> {
             manualOverride = true;
@@ -392,26 +319,23 @@ public class Shooter implements Mechanism {
         return turretTo(Constants.TURRET_CENTER_DEG);
     }
 
-    /** Manual hood override. Also suppresses pose tracking of the hood while held. */
+    /** Set hood position. */
     public Command hoodTo(double position) {
         return instant(() -> applyHood(Constants.clamp(position,
                 Constants.HOOD_MIN_POSITION, Constants.HOOD_MAX_POSITION)));
     }
 
-    /**
-     * Biases the tracked hood position. An offset rather than a direct write, so pose tracking
-     * continues and the trim carries across shots.
-     */
+    /** Shift hood trim. Tracking keep going. */
     public Command trimHood(double delta) {
         return instant(() -> hoodOffset += delta);
     }
 
-    /** Biases the tracked turret angle. */
+    /** Shift turret trim. */
     public Command trimTurret(double deltaDeg) {
         return instant(() -> turretOffsetDeg += deltaDeg);
     }
 
-    /** Drops any manual override and clears the trims, returning to pure pose tracking. */
+    /** Clear override + trims. Back to pure tracking. */
     public Command resumeAutoAim() {
         return instant(() -> {
             manualOverride = false;
@@ -423,9 +347,7 @@ public class Shooter implements Mechanism {
     // ---------------------------------------------------------------- hardware
 
     private void applyTurret(double degrees) {
-        // Measured against the angle the settle timer was started for, not against the previous
-        // call: autoAim() nudges the turret a fraction of a degree per loop, so a per-call
-        // comparison would never exceed the epsilon and the turret would always read settled.
+        // Compare to angle timer started for, not last call. autoAim() move tiny bit each loop.
         double moveDeg = Math.abs(degrees - settledTargetDeg);
         if (moveDeg >= Constants.TURRET_MOVE_EPSILON_DEG) {
             settleDurationMs = Constants.TURRET_SETTLE_BASE_MS
@@ -439,12 +361,12 @@ public class Shooter implements Mechanism {
                 + (degrees - Constants.TURRET_CENTER_DEG) * Constants.turretPositionPerDeg();
         position = Constants.clamp(position, 0, 1);
 
-        // Directions are set in the constructor, so both take the same commanded position.
+        // Directions set in bindServos(). Both get same position.
         turretLeft.setPosition(position);
         turretRight.setPosition(position);
     }
 
-    /** Pushes {@link #targetRpm} to the motor. Idempotent, so every writer may call it. */
+    /** Send targetRpm to motor. Safe to call anytime. */
     private void applyFlywheel() {
         flywheel.setVelocitySetpoint(Units.RotationsPerMinute.of(targetRpm));
     }
@@ -461,7 +383,7 @@ public class Shooter implements Mechanism {
         return Math.abs(currentRpm() - targetRpm) <= Constants.RPM_TOLERANCE;
     }
 
-    /** Reads a lookup table, falling back to {@code fallback} if the table has no entries. */
+    /** Read table. Empty table = fallback. */
     private static double lookUp(
             dev.nextftc.control.util.InterpolatingMap<Double> map, double key, double fallback) {
         if (map.isEmpty()) {

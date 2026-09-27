@@ -15,47 +15,27 @@ import dev.nextftc.robot.opmode.NextTeleop;
 import dev.nextftc.robot.triggers.CommandGamepad;
 
 /**
- * Shooter bring-up and calibration: flywheel, turret, and hood in one OpMode.
+ * Shooter test + calibration. Flywheel, turret, hood.
  *
- * <p>Everything runs open loop. The flywheel takes raw throttle instead of a velocity setpoint,
- * so the untuned velocity loop cannot interfere. The turret and hood take raw servo positions,
- * bypassing the degree mapping in {@code turretTo()} — that mapping is what this OpMode
- * establishes, so it cannot be used to find itself.
+ * <p>All raw. Flywheel raw power. Turret + hood raw servo position. One held command own
+ * shooter whole run, autoAim() off, nothing move unless you move it.
  *
- * <p>A single held command owns the shooter for the whole run, which keeps {@code autoAim()}
- * suspended. Without that, {@code autoAim()} being the shooter's default command would swing the
- * turret to its computed bearing the moment the OpMode started, using calibration constants that
- * are still placeholders. Nothing moves here except what the controls move, and the flywheel
- * always starts at zero.
+ * <h2>Flywheel</h2>
+ * <p>Step power up, wait RPM settle, read implied kV. Put in FLYWHEEL_KV. RPM crazy = wrong
+ * FLYWHEEL_TICKS_PER_REV. RPM zero but spinning = encoder not plugged.
  *
- * <h2>Flywheel: FLYWHEEL_TICKS_PER_REV and FLYWHEEL_KV</h2>
- * <p>Step the power up, let the RPM settle, and read the implied kV — that value goes straight
- * into {@code Constants.FLYWHEEL_KV}. Take it near your intended shooting speed rather than at
- * full throttle, since the relationship is not perfectly linear at the extremes. If the RPM is
- * wildly implausible, {@code FLYWHEEL_TICKS_PER_REV} is wrong for this motor. If it reads zero
- * while the flywheel is clearly spinning, the encoder is not wired.
- *
- * <h2>Turret: TURRET_CENTER_POSITION, then verifying the gearing</h2>
- * <p>{@code TURRET_POSITION_PER_DEG} is derived from the gear train and the servo travel, so it
- * is not measured here — it is checked.
+ * <h2>Turret</h2>
  * <ol>
- *   <li>Step the turret until it points straight forward. Press X to mark it, and set
- *       {@code TURRET_CENTER_POSITION} to that value in Panels.</li>
- *   <li>Step to a clearly different angle and press BACK to mark it.</li>
- *   <li>Measure that angle off the robot with a protractor and compare it with the predicted
- *       angle between marks on telemetry.</li>
- *   <li>If they disagree, adjust {@code TURRET_SERVO_TRAVEL_DEG} in Panels until they match. A
- *       value near 270 means the servos were never reprogrammed to 320; any other mismatch means
- *       the PWM range is not reaching the servo's full travel.</li>
+ *   <li>Point turret straight forward. X mark it. Set TURRET_CENTER_POSITION in Panels.</li>
+ *   <li>Move to other angle. BACK mark it.</li>
+ *   <li>Measure angle with protractor. Compare to predicted angle on telemetry.</li>
+ *   <li>Off? Change TURRET_SERVO_TRAVEL_DEG in Panels till match. Near 270 = servo not
+ *       reprogrammed. Other = PWM range wrong.</li>
  * </ol>
  *
- * <p>For the travel limits, step carefully outward to the mechanical stop, back off, and read the
- * inferred degrees — those become {@code TURRET_MIN_DEG} and {@code TURRET_MAX_DEG}. Set them
- * conservatively; they are the only thing preventing a hardstop crash once auto-aim is live.
+ * <p>Limits: step slow to stop, back off, read degrees.
  *
- * <p><b>Step servos in fine increments and stop the moment one buzzes or the mechanism binds.</b>
- * A servo held against a hardstop will burn out, and with two ganged turret servos you cannot
- * hear which one is fighting.
+ * <p><b>Small steps. Stop if servo buzz or bind. Servo on hardstop burn.</b>
  */
 @NextTeleop(name = "Shooter Test", group = "test")
 public class ShooterTest extends NextOpMode {
@@ -69,7 +49,7 @@ public class ShooterTest extends NextOpMode {
 
     private double power = 0;
 
-    /** Time of the previous loop, for scaling stick input by elapsed time. */
+    /** Last loop time. Scale stick by time. */
     private long lastLoopNanos;
     private double turretPosition = Constants.TURRET_CENTER_POSITION;
     private double hoodPosition = Constants.HOOD_STOWED_POSITION;
@@ -81,11 +61,10 @@ public class ShooterTest extends NextOpMode {
         super(robot, BulkReadHook.INSTANCE);
         this.robot = robot;
 
-        // Send telemetry to Panels as well as the Driver Station. NextFTC dedupes backends and
-        // Panels hands back the same wrapper every time, so re-registering per OpMode is safe.
+        // Telemetry to Panels + Driver Hub. Safe to add every OpMode.
         Telemetry.addBackend(PanelsTelemetry.INSTANCE.getFtcTelemetry());
 
-        // Re-applies the turret servos' 500-2500 us range, which the SDK resets every OpMode.
+        // Re-apply servo range + direction. SDK reset them each OpMode.
         robot.bindHardware();
 
         driver = new CommandGamepad(gamepad1);
@@ -93,7 +72,7 @@ public class ShooterTest extends NextOpMode {
     }
 
     private void bindControls() {
-        // None of these require a mechanism, so they never preempt the held manualControl command.
+        // No mechanism needed. No interrupt manualControl.
 
         // Flywheel.
         driver.rightTrigger().isOver(0.5).onTrue(Commands.instant(() -> adjustPower(POWER_STEP)));
@@ -118,16 +97,12 @@ public class ShooterTest extends NextOpMode {
     }
 
     /**
-     * Continuous stick control, scaled by elapsed time so speeds hold regardless of loop rate.
-     *
-     * <p>Left stick X moves the turret at TURRET_STICK_DEG_PER_SEC, converted from turret degrees
-     * to raw servo position through the gear ratio so the speed means the same thing at the
-     * turret. Right stick Y moves the hood at HOOD_STICK_POSITION_PER_SEC; pushing up raises the
-     * servo position. The SDK reports stick Y as negative when pushed up, hence the negation.
+     * Sticks. Scaled by loop time, same speed any loop rate.
+     * Left X = turret. Right Y = hood, push up = position up (SDK Y negative when up).
      */
     private void driveFromSticks() {
         long now = System.nanoTime();
-        // Capped so a stalled loop cannot turn into one large jump.
+        // Cap. Slow loop no big jump.
         double dt = Math.min((now - lastLoopNanos) / 1e9, 0.1);
         lastLoopNanos = now;
 
@@ -142,8 +117,7 @@ public class ShooterTest extends NextOpMode {
             adjustHood(hoodStick * Constants.HOOD_STICK_POSITION_PER_SEC * dt);
         }
 
-        // Re-clamped every loop, not just on input, so narrowing the range in Panels pulls the
-        // hood back inside it immediately.
+        // Clamp every loop. Panels range change apply now.
         hoodPosition = clampHood(hoodPosition);
     }
 
@@ -155,7 +129,7 @@ public class ShooterTest extends NextOpMode {
         turretPosition = Constants.clamp(turretPosition + delta, 0, 1);
     }
 
-    /** Every hood input goes through here, so none can drive the hood outside its set range. */
+    /** All hood input go here. Never leave range. */
     private void adjustHood(double delta) {
         hoodPosition = clampHood(hoodPosition + delta);
     }
@@ -167,7 +141,7 @@ public class ShooterTest extends NextOpMode {
     @Override
     public void start() {
         lastLoopNanos = System.nanoTime();
-        // Scheduled once and never cancelled, so it owns the shooter for the whole OpMode.
+        // Schedule once. Own shooter whole OpMode.
         robot.shooter.manualControl(
                 () -> power,
                 () -> turretPosition,
@@ -223,8 +197,7 @@ public class ShooterTest extends NextOpMode {
 
     @Override
     public void end() {
-        // Cut power directly. Zeroing the field alone would do nothing, since the command
-        // holding the flywheel is already cancelled by the time this runs.
+        // Cut power direct. Command already cancelled here.
         power = 0;
         robot.shooter.coastFlywheel();
     }

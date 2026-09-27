@@ -16,12 +16,10 @@ import dev.nextftc.robot.opmode.BulkReadHook;
 import dev.nextftc.robot.opmode.NextOpMode;
 
 /**
- * Example autonomous: drive to a shooting spot while aiming, then empty the robot into the goal.
+ * Example auto: drive to shoot spot aiming, shoot all.
  *
- * <p>The pattern every auto follows. The routine is written once here, independent of alliance;
- * {@link BlueExampleAuto} and {@link RedExampleAuto} are one-line entries that pick the alliance
- * and the matching exported paths. Movement comes entirely from the visualizer export, and every
- * robot action is spelled out in {@link #routine()}.
+ * <p>Pattern for every auto. Routine write once here, both alliances. Blue/Red subclass pick
+ * alliance + paths. Movement from visualizer export. Actions in routine().
  */
 public abstract class ExampleAuto extends NextOpMode {
 
@@ -29,7 +27,7 @@ public abstract class ExampleAuto extends NextOpMode {
     private final Alliance alliance;
     private final ExampleRoute route;
 
-    /** False when the follower could not be built, in which case nothing is scheduled. */
+    /** False = no follower. Nothing scheduled. */
     private final boolean ready;
 
     protected ExampleAuto(Robot robot, Alliance alliance, ExampleRoute route) {
@@ -41,17 +39,13 @@ public abstract class ExampleAuto extends NextOpMode {
         Telemetry.addBackend(PanelsTelemetry.INSTANCE.getFtcTelemetry());
 
         robot.bindHardware();
-        // The start pose is where the first path begins, heading included, so no coordinate is
-        // duplicated outside the export.
+        // Start pose = first path start, heading too.
         Pose startPose = route.driveToShoot().get(0);
         ready = robot.beginAuto(hardwareMap, alliance, startPose);
         robot.reset();
     }
 
-    /**
-     * The routine. Mechanism default commands do not run inside a sequential group, so every
-     * step says what each mechanism does — see {@link AutoCommands}.
-     */
+    /** Routine. Say every mechanism action, defaults no run. */
     private Command routine() {
         return sequential(
                 AutoCommands.driveAiming(robot, route.driveToShoot()),
@@ -89,7 +83,7 @@ public abstract class ExampleAuto extends NextOpMode {
 
     @Override
     public void end() {
-        // Cut the flywheel directly; the scheduler is being torn down, so a command would not run.
+        // Cut flywheel direct. Scheduler shutting down.
         robot.shooter.coastFlywheel();
     }
 }

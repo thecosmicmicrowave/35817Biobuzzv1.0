@@ -6,15 +6,11 @@ import org.firstinspires.ftc.teamcode.paths.BlueExamplePaths;
 import org.firstinspires.ftc.teamcode.paths.RedExamplePaths;
 
 /**
- * The paths {@link ExampleAuto} uses, as one type both alliances' exports can satisfy.
+ * Paths ExampleAuto use. One type for both alliance exports.
  *
- * <p>The visualizer's two exports share method names but no type, and one cannot be added
- * without editing generated code. The nested adapters inherit the generated methods and declare
- * this interface. If a path is renamed in the visualizer, the adapter stops compiling and the
- * error names the missing method — rather than an auto that silently breaks at a match.
+ * <p>Adapters inherit export methods. Path renamed in visualizer = compile error here.
  *
- * <p>To add a path: draw and name it in the visualizer, re-export both alliances, and add a
- * method here with the same name.
+ * <p>Add path: draw + name in visualizer, re-export both, add method here same name.
  */
 public interface ExampleRoute {
 

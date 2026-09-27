@@ -18,16 +18,12 @@ import dev.nextftc.robot.opmode.NextTeleop;
 import dev.nextftc.robot.triggers.CommandGamepad;
 
 /**
- * Driver-controlled OpMode.
+ * Driver OpMode.
  *
- * <p>Driving goes through Pedro's own manual drive rather than NextFTC's {@code DriveCommands}.
- * The follower owns the drivetrain motors, so letting NextFTC drive them as well would mean two
- * writers fighting over the same hardware every loop.
+ * <p>Drive with Pedro manual drive. Pedro own drive motors.
  *
- * <p>Ordering matters. {@code follower.manual(...)} is called here in {@link #periodic()} and
- * {@code follower.update()} runs afterwards from {@code Robot.periodic()}, because NextFTC's
- * robot hook fires after the OpMode's own periodic. The follower must be updated every loop
- * while driving manually, which also keeps localization live for the shooter's auto-aim.
+ * <p>Order matter: follower.manual() here in periodic(), follower.update() after in
+ * Robot.periodic().
  */
 @NextTeleop(name = "Main TeleOp")
 public class MainTeleOp extends NextOpMode {
@@ -35,20 +31,19 @@ public class MainTeleOp extends NextOpMode {
     private final Robot robot;
     private final CommandGamepad driver;
 
-    /** Whether this run picked up an alliance and position from an auto. */
+    /** Got alliance + pose from auto. */
     private final boolean fromAuto;
 
     public MainTeleOp(Robot robot) {
         super(robot, BulkReadHook.INSTANCE);
         this.robot = robot;
 
-        // Send telemetry to Panels as well as the Driver Station. NextFTC dedupes backends and
-        // Panels hands back the same wrapper every time, so re-registering per OpMode is safe.
+        // Telemetry to Panels + Driver Hub. Safe to add every OpMode.
         Telemetry.addBackend(PanelsTelemetry.INSTANCE.getFtcTelemetry());
 
         robot.bindHardware();
-        // Take over from auto if one ran since the app started: same alliance, starting where it
-        // ended. Otherwise the default start pose, with the alliance picked during init.
+        // After auto: same alliance, start where auto end.
+        // Else default pose, pick alliance in init.
         fromAuto = robot.hasAutoHandoff();
         robot.initFollower(hardwareMap, robot.takeHandoffPose());
         robot.reset();
@@ -66,8 +61,7 @@ public class MainTeleOp extends NextOpMode {
 
         driver.a().onTrue(robot.intake.toggleFlower());
 
-        // toggleOnTrue would not work here: spinUp() is instant, so it finishes on the frame
-        // it starts and the second press would have nothing to cancel.
+        // Not toggleOnTrue: spinUp() instant, nothing to cancel.
         driver.x().onTrue(Commands.conditional(
                 robot.shooter::isArmed,
                 robot.shooter.idleFlywheel(),
@@ -79,15 +73,14 @@ public class MainTeleOp extends NextOpMode {
         driver.dpadUp().onTrue(robot.shooter.trimHood(Constants.HOOD_TRIM_STEP));
         driver.dpadDown().onTrue(robot.shooter.trimHood(-Constants.HOOD_TRIM_STEP));
 
-        // Clears any manual turret override and zeroes the trims.
+        // Clear turret override + trims.
         driver.back().onTrue(robot.shooter.resumeAutoAim());
     }
 
     @Override
     public void disabledPeriodic() {
-        // NextFTC only polls gamepad triggers while running, not during init, so the alliance
-        // picker reads the gamepad directly. Only offered without an auto handoff, so a stray
-        // dpad press during init cannot overwrite the alliance the auto just ran.
+        // Triggers no poll in init. Read gamepad direct.
+        // Only when no auto handoff.
         if (!fromAuto) {
             if (gamepad1.dpad_left) {
                 robot.setAlliance(Alliance.BLUE);
@@ -120,9 +113,8 @@ public class MainTeleOp extends NextOpMode {
                 robot.follower().pose().heading()
         );
 
-        // driveOrHold rather than manual: when the sticks are released the follower holds its
-        // current pose instead of coasting, so the robot resists being pushed while lining up
-        // a shot. Swap for robot.follower().manual(powers) to let it coast instead.
+        // driveOrHold: sticks released = hold spot, no coast.
+        // Use follower.manual(powers) to coast.
         ManualDrive.driveOrHold(robot.follower(), powers);
     }
 

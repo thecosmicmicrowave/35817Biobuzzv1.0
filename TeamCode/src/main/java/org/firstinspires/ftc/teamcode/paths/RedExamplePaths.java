@@ -7,9 +7,8 @@ import com.pedropathing.api.PoseFactory;
 import com.pedropathing.math.Pose;
 import com.pedropathing.paths.Path;
 
-// Stand-in for a Pedro visualizer export, handwritten in the exact format the visualizer's
-// "paths only" export produces with mirroring turned on. Replace it with a real export; do not
-// hand-edit real exports.
+// Fake visualizer export, mirror on, real format. Replace with real export.
+// Never hand-edit real one.
 public class RedExamplePaths {
     private final PoseFactory poseFactory = PoseFactory.degrees().mirrorX(72);
 
