@@ -123,7 +123,7 @@ public final class Constants {
     public static double TURRET_CENTER_POSITION = 0.5;
 
     /** Kept clear of each physical end of travel so the servos never stall against a stop. */
-    public static double TURRET_LIMIT_MARGIN_DEG = 5.0;
+    public static double TURRET_LIMIT_MARGIN_DEG = 2.0;
 
     /**
      * Turret travel limits, in degrees relative to robot forward. Derived from where the servo's
@@ -166,7 +166,7 @@ public final class Constants {
     public static double TURRET_TRIM_STEP_DEG = 1.0;
 
     /** Turret speed at full stick in the Shooter Test, in turret degrees per second. */
-    public static double TURRET_STICK_DEG_PER_SEC = 250;
+    public static double TURRET_STICK_DEG_PER_SEC = 700;
 
     /** Stick input smaller than this is ignored, so a resting stick does not creep the turret. */
     public static double STICK_DEADZONE = 0.05;
@@ -179,6 +179,9 @@ public final class Constants {
 
     /** Hood position change per press of the trim controls. */
     public static double HOOD_TRIM_STEP = 0.01;
+
+    /** Hood speed at full stick in the Shooter Test, in servo position per second. */
+    public static double HOOD_STICK_POSITION_PER_SEC = 0.5;
 
     // ---------------------------------------------------------------- flywheel
 

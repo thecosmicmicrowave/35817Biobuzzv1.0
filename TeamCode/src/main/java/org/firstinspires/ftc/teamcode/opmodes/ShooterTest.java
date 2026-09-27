@@ -115,22 +115,33 @@ public class ShooterTest extends NextOpMode {
     }
 
     /**
-     * Left stick X moves the turret continuously. Scaled by elapsed time so the turret turns at
-     * TURRET_STICK_DEG_PER_SEC regardless of loop rate, and converted from turret degrees to raw
-     * servo position through the gear ratio so the speed means the same thing at the turret.
+     * Continuous stick control, scaled by elapsed time so speeds hold regardless of loop rate.
+     *
+     * <p>Left stick X moves the turret at TURRET_STICK_DEG_PER_SEC, converted from turret degrees
+     * to raw servo position through the gear ratio so the speed means the same thing at the
+     * turret. Right stick Y moves the hood at HOOD_STICK_POSITION_PER_SEC; pushing up raises the
+     * servo position. The SDK reports stick Y as negative when pushed up, hence the negation.
      */
-    private void driveTurretFromStick() {
+    private void driveFromSticks() {
         long now = System.nanoTime();
         // Capped so a stalled loop cannot turn into one large jump.
         double dt = Math.min((now - lastLoopNanos) / 1e9, 0.1);
         lastLoopNanos = now;
 
-        double stick = gamepad1.left_stick_x;
-        if (Math.abs(stick) < Constants.STICK_DEADZONE) {
-            return;
+        double turretStick = gamepad1.left_stick_x;
+        if (Math.abs(turretStick) >= Constants.STICK_DEADZONE) {
+            double degrees = turretStick * Constants.TURRET_STICK_DEG_PER_SEC * dt;
+            adjustTurret(degrees * Constants.turretPositionPerDeg());
         }
-        double degrees = stick * Constants.TURRET_STICK_DEG_PER_SEC * dt;
-        adjustTurret(degrees * Constants.turretPositionPerDeg());
+
+        double hoodStick = -gamepad1.right_stick_y;
+        if (Math.abs(hoodStick) >= Constants.STICK_DEADZONE) {
+            adjustHood(hoodStick * Constants.HOOD_STICK_POSITION_PER_SEC * dt);
+        }
+
+        // Re-clamped every loop, not just on input, so narrowing the range in Panels pulls the
+        // hood back inside it immediately.
+        hoodPosition = clampHood(hoodPosition);
     }
 
     private void adjustPower(double delta) {
@@ -141,8 +152,13 @@ public class ShooterTest extends NextOpMode {
         turretPosition = Constants.clamp(turretPosition + delta, 0, 1);
     }
 
+    /** Every hood input goes through here, so none can drive the hood outside its set range. */
     private void adjustHood(double delta) {
-        hoodPosition = Constants.clamp(hoodPosition + delta, 0, 1);
+        hoodPosition = clampHood(hoodPosition + delta);
+    }
+
+    private static double clampHood(double position) {
+        return Constants.clamp(position, Constants.HOOD_MIN_POSITION, Constants.HOOD_MAX_POSITION);
     }
 
     @Override
@@ -158,11 +174,11 @@ public class ShooterTest extends NextOpMode {
 
     @Override
     public void periodic() {
-        driveTurretFromStick();
+        driveFromSticks();
 
         Telemetry.log("flywheel: triggers step power, B stops");
         Telemetry.log("turret:   left stick X, dpad L/R fine, bumpers coarse");
-        Telemetry.log("hood:     dpad U/D fine, Y/A coarse");
+        Telemetry.log("hood:     right stick Y, dpad U/D fine, Y/A coarse");
         Telemetry.log("marks:    X center, BACK reference");
         Telemetry.log("");
 
@@ -177,6 +193,7 @@ public class ShooterTest extends NextOpMode {
         } else {
             Telemetry.log("implied kV (power/RPM)", "waiting for RPM");
         }
+        Telemetry.log("rpm", rpm);
         Telemetry.log("ticks per rev in use", Constants.FLYWHEEL_TICKS_PER_REV);
         Telemetry.log("");
 
