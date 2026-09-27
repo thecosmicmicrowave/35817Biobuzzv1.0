@@ -22,14 +22,38 @@ public class IntakeTransfer implements Mechanism {
 
     private final NextMotor stage1 = new NextMotor("stage1");
     private final NextMotor stage2 = new NextMotor("stage2");
-    private final NextServo gate = new NextServo("gate");
-    private final NextServo flowerLeft = new NextServo("flowerLeft");
-    private final NextServo flowerRight = new NextServo("flowerRight");
+    // Not final: replaced at the start of every OpMode by bindServos().
+    private NextServo gate;
+    private NextServo flowerLeft;
+    private NextServo flowerRight;
 
     private boolean gateOpen = false;
     private boolean flowerDeployed = false;
 
     public IntakeTransfer() {
+        bindServos();
+    }
+
+    /**
+     * Builds fresh servo objects for the gate and flower arm.
+     *
+     * <p>Must run at the start of every OpMode. At each OpMode start the SDK resets every servo:
+     * {@code LynxController.resetDeviceConfigurationForOpMode()} calls {@code initializeHardware()},
+     * which puts the pulse range back to the 600-2400 us default and disables PWM, and
+     * {@code ServoImpl.resetDeviceConfigurationForOpMode()} puts the direction back to forward.
+     * This mechanism outlives OpModes, so servo objects built once would configure the hardware
+     * only in the first OpMode after the app starts. Fresh {@code NextServo}s re-apply the range
+     * and direction on first use, and have an empty position cache, so their first position write
+     * always reaches the hardware instead of being skipped as unchanged while the servo sits
+     * disabled. Servos do not register in any shared loop, so replacing them leaks nothing.
+     *
+     * <p>Without this, the reversal of flowerRight would be lost after the first OpMode and the
+     * two flower servos would drive the arm in opposite directions.
+     */
+    public void bindServos() {
+        gate = new NextServo("gate");
+        flowerLeft = new NextServo("flowerLeft");
+        flowerRight = new NextServo("flowerRight");
         flowerRight.setDirection(NextMotor.Direction.REVERSE);
     }
 

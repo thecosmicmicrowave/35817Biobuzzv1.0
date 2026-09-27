@@ -42,6 +42,7 @@ public class MainTeleOp extends NextOpMode {
         // Panels hands back the same wrapper every time, so re-registering per OpMode is safe.
         Telemetry.addBackend(PanelsTelemetry.INSTANCE.getFtcTelemetry());
 
+        robot.bindHardware();
         robot.initFollower(hardwareMap, Constants.DEFAULT_START_POSE);
         robot.reset();
 

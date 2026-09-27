@@ -41,9 +41,10 @@ public class Shooter implements Mechanism {
      */
     private final NextMotor flywheel = new NextMotor(
             "flywheel", Units.Rotations.of(1.0 / Constants.FLYWHEEL_TICKS_PER_REV));
-    private final NextServo hood = new NextServo("hood");
-    private final NextServo turretLeft = new NextServo("turretLeft");
-    private final NextServo turretRight = new NextServo("turretRight");
+    // Not final: replaced at the start of every OpMode by bindServos().
+    private NextServo hood;
+    private NextServo turretLeft;
+    private NextServo turretRight;
 
     private final Supplier<Pose> poseSupplier;
 
@@ -93,9 +94,29 @@ public class Shooter implements Mechanism {
 
     public Shooter(Supplier<Pose> poseSupplier) {
         this.poseSupplier = poseSupplier;
+        bindServos();
+        applyTuning();
+    }
+
+    /**
+     * Builds fresh servo objects for the hood and turret.
+     *
+     * <p>Must run at the start of every OpMode. At each OpMode start the SDK resets every servo:
+     * {@code LynxController.resetDeviceConfigurationForOpMode()} calls {@code initializeHardware()},
+     * which puts the pulse range back to the 600-2400 us default and disables PWM, and
+     * {@code ServoImpl.resetDeviceConfigurationForOpMode()} puts the direction back to forward.
+     * This mechanism outlives OpModes, so servo objects built once would configure the hardware
+     * only in the first OpMode after the app starts. Fresh {@code NextServo}s re-apply the range
+     * and direction on first use, and have an empty position cache, so their first position write
+     * always reaches the hardware instead of being skipped as unchanged while the servo sits
+     * disabled. Servos do not register in any shared loop, so replacing them leaks nothing.
+     */
+    public void bindServos() {
+        hood = new NextServo("hood");
+        turretLeft = new NextServo("turretLeft");
+        turretRight = new NextServo("turretRight");
         configureTurretServo(turretLeft, Constants.TURRET_LEFT_REVERSED);
         configureTurretServo(turretRight, Constants.TURRET_RIGHT_REVERSED);
-        applyTuning();
     }
 
     /**

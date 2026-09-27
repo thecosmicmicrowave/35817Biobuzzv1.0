@@ -62,6 +62,17 @@ public class Robot implements NextRobot {
     }
 
     /**
+     * Rebuilds every servo object so its pulse range and direction are re-applied. Must be the
+     * first thing every OpMode does, before anything writes a servo: the SDK resets servo range
+     * and direction at the start of each OpMode, and the mechanisms outlive OpModes. See
+     * {@code Shooter.bindServos()} for the details.
+     */
+    public void bindHardware() {
+        shooter.bindServos();
+        intake.bindServos();
+    }
+
+    /**
      * Returns both mechanisms to a known state. Called by every OpMode alongside
      * {@link #initFollower(HardwareMap, Pose)}, because mechanisms are constructed once at event-loop
      * creation and their cached state otherwise carries between runs.

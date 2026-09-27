@@ -85,6 +85,9 @@ public class ShooterTest extends NextOpMode {
         // Panels hands back the same wrapper every time, so re-registering per OpMode is safe.
         Telemetry.addBackend(PanelsTelemetry.INSTANCE.getFtcTelemetry());
 
+        // Re-applies the turret servos' 500-2500 us range, which the SDK resets every OpMode.
+        robot.bindHardware();
+
         driver = new CommandGamepad(gamepad1);
         bindControls();
     }
