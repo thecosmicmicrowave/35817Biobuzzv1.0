@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.subsystems;
 import com.pedropathing.ivy.Command;
 import com.pedropathing.math.Pose;
 
+import org.firstinspires.ftc.teamcode.globals.Alliance;
 import org.firstinspires.ftc.teamcode.globals.Constants;
 
 import java.util.function.DoubleSupplier;
@@ -47,6 +48,7 @@ public class Shooter implements Mechanism {
     private NextServo turretRight;
 
     private final Supplier<Pose> poseSupplier;
+    private final Supplier<Alliance> allianceSupplier;
 
     private final Debouncer atSpeedDebouncer =
             new Debouncer(Constants.AT_SPEED_DEBOUNCE_SECONDS, Debouncer.DebounceType.RISING);
@@ -92,8 +94,9 @@ public class Shooter implements Mechanism {
     /** Ticks-per-rev the flywheel's encoder scaling was last built from. */
     private double appliedTicksPerRev = Constants.FLYWHEEL_TICKS_PER_REV;
 
-    public Shooter(Supplier<Pose> poseSupplier) {
+    public Shooter(Supplier<Pose> poseSupplier, Supplier<Alliance> allianceSupplier) {
         this.poseSupplier = poseSupplier;
+        this.allianceSupplier = allianceSupplier;
         bindServos();
         applyTuning();
     }
@@ -193,16 +196,18 @@ public class Shooter implements Mechanism {
 
     public double distanceToGoal() {
         Pose pose = poseSupplier.get();
-        double dx = Constants.GOAL_X - pose.x();
-        double dy = Constants.GOAL_Y - pose.y();
+        Alliance alliance = allianceSupplier.get();
+        double dx = Constants.goalX(alliance) - pose.x();
+        double dy = Constants.goalY(alliance) - pose.y();
         return Math.hypot(dx, dy);
     }
 
     /** Bearing from the robot to the goal, in degrees relative to robot forward. */
     public double bearingToGoal() {
         Pose pose = poseSupplier.get();
-        double dx = Constants.GOAL_X - pose.x();
-        double dy = Constants.GOAL_Y - pose.y();
+        Alliance alliance = allianceSupplier.get();
+        double dx = Constants.goalX(alliance) - pose.x();
+        double dy = Constants.goalY(alliance) - pose.y();
         double fieldBearingDeg = Math.toDegrees(Math.atan2(dy, dx));
         return Constants.normalizeDeg(fieldBearingDeg - Math.toDegrees(pose.heading()));
     }

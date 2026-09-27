@@ -36,9 +36,20 @@ import dev.nextftc.robot.NextRobot;
 public class Robot implements NextRobot {
 
     public final IntakeTransfer intake = new IntakeTransfer();
-    public final Shooter shooter = new Shooter(this::pose);
+    public final Shooter shooter = new Shooter(this::pose, this::alliance);
 
     private Follower follower;
+
+    private Alliance alliance = Alliance.BLUE;
+
+    /**
+     * The follower's pose as of the latest loop, kept on the robot rather than read from the
+     * follower so it survives the follower being rebuilt when the next OpMode starts.
+     */
+    private Pose lastPose = Constants.DEFAULT_START_POSE;
+
+    /** Set when an auto starts, consumed by the next teleop. */
+    private boolean autoHandoffPending = false;
 
     public Robot() {
     }
@@ -59,6 +70,37 @@ public class Robot implements NextRobot {
         if (follower != null) {
             follower.setPose(startPose);
         }
+    }
+
+    /**
+     * Starts an autonomous run: sets the alliance, starts the follower at the auto's start pose,
+     * and marks a handoff as pending so the next teleop picks up the alliance and wherever the
+     * auto ends. Returns false if the follower is unavailable, which is the case until
+     * {@code pedro/Constants.create()} is implemented.
+     */
+    public boolean beginAuto(HardwareMap hardwareMap, Alliance alliance, Pose startPose) {
+        this.alliance = alliance;
+        initFollower(hardwareMap, startPose);
+        lastPose = startPose;
+        autoHandoffPending = follower != null;
+        return follower != null;
+    }
+
+    /** Whether an auto has run since the app started and its handoff has not been used yet. */
+    public boolean hasAutoHandoff() {
+        return autoHandoffPending;
+    }
+
+    /**
+     * The pose teleop should start from: where the last auto ended if its handoff is still
+     * pending, otherwise the default start pose. Consumes the handoff, so a second teleop run
+     * afterwards — a practice run, say — starts from the default instead of inheriting a stale
+     * position.
+     */
+    public Pose takeHandoffPose() {
+        Pose pose = autoHandoffPending ? lastPose : Constants.DEFAULT_START_POSE;
+        autoHandoffPending = false;
+        return pose;
     }
 
     /**
@@ -86,6 +128,7 @@ public class Robot implements NextRobot {
     public void periodic() {
         if (follower != null) {
             follower.update();
+            lastPose = follower.pose();
         }
     }
 
@@ -98,6 +141,14 @@ public class Robot implements NextRobot {
 
     public Follower follower() {
         return follower;
+    }
+
+    public Alliance alliance() {
+        return alliance;
+    }
+
+    public void setAlliance(Alliance alliance) {
+        this.alliance = alliance;
     }
 
     /**

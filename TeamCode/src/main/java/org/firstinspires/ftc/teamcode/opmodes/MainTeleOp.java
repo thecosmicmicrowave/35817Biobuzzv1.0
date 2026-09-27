@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.opmodes;
 
 import org.firstinspires.ftc.teamcode.commands.ShootCommands;
+import org.firstinspires.ftc.teamcode.globals.Alliance;
 import org.firstinspires.ftc.teamcode.globals.Constants;
 import org.firstinspires.ftc.teamcode.globals.Robot;
 
@@ -34,6 +35,9 @@ public class MainTeleOp extends NextOpMode {
     private final Robot robot;
     private final CommandGamepad driver;
 
+    /** Whether this run picked up an alliance and position from an auto. */
+    private final boolean fromAuto;
+
     public MainTeleOp(Robot robot) {
         super(robot, BulkReadHook.INSTANCE);
         this.robot = robot;
@@ -43,7 +47,10 @@ public class MainTeleOp extends NextOpMode {
         Telemetry.addBackend(PanelsTelemetry.INSTANCE.getFtcTelemetry());
 
         robot.bindHardware();
-        robot.initFollower(hardwareMap, Constants.DEFAULT_START_POSE);
+        // Take over from auto if one ran since the app started: same alliance, starting where it
+        // ended. Otherwise the default start pose, with the alliance picked during init.
+        fromAuto = robot.hasAutoHandoff();
+        robot.initFollower(hardwareMap, robot.takeHandoffPose());
         robot.reset();
 
         driver = new CommandGamepad(gamepad1);
@@ -77,6 +84,25 @@ public class MainTeleOp extends NextOpMode {
     }
 
     @Override
+    public void disabledPeriodic() {
+        // NextFTC only polls gamepad triggers while running, not during init, so the alliance
+        // picker reads the gamepad directly. Only offered without an auto handoff, so a stray
+        // dpad press during init cannot overwrite the alliance the auto just ran.
+        if (!fromAuto) {
+            if (gamepad1.dpad_left) {
+                robot.setAlliance(Alliance.BLUE);
+            } else if (gamepad1.dpad_right) {
+                robot.setAlliance(Alliance.RED);
+            }
+            Telemetry.log("alliance", robot.alliance() + "   (dpad left = BLUE, right = RED)");
+            Telemetry.log("start pose", "default");
+        } else {
+            Telemetry.log("alliance", robot.alliance() + "   (from auto)");
+            Telemetry.log("start pose", "where auto ended");
+        }
+    }
+
+    @Override
     public void periodic() {
         drive();
         pushTelemetry();
@@ -101,6 +127,7 @@ public class MainTeleOp extends NextOpMode {
     }
 
     private void pushTelemetry() {
+        Telemetry.log("alliance", robot.alliance());
         Telemetry.log("distance to goal", robot.shooter.distanceToGoal());
         Telemetry.log("turret (deg)", robot.shooter.commandedTurretDeg());
         Telemetry.log("hood", robot.shooter.commandedHoodPosition());

@@ -35,7 +35,14 @@ public final class Constants {
 
     // ---------------------------------------------------------------- field geometry
 
-    /** Field coordinate the shooter aims at, in inches in Pedro's field frame. */
+    /** Width and height of the field, in inches. Pedro's field frame runs 0..144 on both axes. */
+    public static final double FIELD_SIZE_IN = 144;
+
+    /**
+     * Field coordinate the shooter aims at, in inches in Pedro's field frame, for the
+     * <b>blue</b> alliance. Read it through {@link #goalX(Alliance)} and {@link #goalY(Alliance)},
+     * which mirror it for red.
+     */
     public static double GOAL_X = 72;
     public static double GOAL_Y = 144;
 
@@ -274,6 +281,20 @@ public final class Constants {
     }
 
     // ---------------------------------------------------------------- helpers
+
+    /**
+     * The goal's x for an alliance. Red is blue mirrored across the field's vertical centerline,
+     * matching the Pedro visualizer's mirror export ({@code PoseFactory.mirrorX(72)}, which maps
+     * x to {@code 144 - x} and leaves y alone), so red paths and red aiming agree.
+     */
+    public static double goalX(Alliance alliance) {
+        return alliance == Alliance.RED ? FIELD_SIZE_IN - GOAL_X : GOAL_X;
+    }
+
+    /** The goal's y for an alliance. Mirroring across the vertical centerline leaves y unchanged. */
+    public static double goalY(Alliance alliance) {
+        return GOAL_Y;
+    }
 
     public static double clamp(double value, double min, double max) {
         return Math.max(min, Math.min(max, value));

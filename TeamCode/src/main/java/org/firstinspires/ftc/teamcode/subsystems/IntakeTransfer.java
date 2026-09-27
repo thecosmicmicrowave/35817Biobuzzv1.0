@@ -151,6 +151,17 @@ public class IntakeTransfer implements Mechanism {
         });
     }
 
+    /**
+     * Stops both stages and leaves the gate alone. Needed in auto, where this mechanism's default
+     * command never runs, so nothing else would stop the rollers after an intake step ends.
+     */
+    public Command stopIntake() {
+        return instant(() -> {
+            stage1.setThrottle(0);
+            stage2.setThrottle(0);
+        });
+    }
+
     /** Closes the gate and stops the feed. Used to end a shot sequence. */
     public Command stopFeed() {
         return instant(() -> {
