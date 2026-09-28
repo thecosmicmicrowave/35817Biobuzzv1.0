@@ -6,11 +6,7 @@ import com.pedropathing.ivy.commands.Commands;
 import org.firstinspires.ftc.teamcode.globals.Constants;
 import org.firstinspires.ftc.teamcode.globals.Robot;
 
-/**
- * Shot sequences. Use shooter + intake. Auto and teleop share them.
- *
- * <p>Every wait has timeout. Flywheel never reach speed = no stall forever.
- */
+/** Shot sequences. */
 public final class ShootCommands {
 
     private ShootCommands() {

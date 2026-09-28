@@ -16,17 +16,10 @@ import dev.nextftc.hardware.actuators.NextServo;
 import dev.nextftc.robot.Mechanism;
 import dev.nextftc.units.Units;
 
-/**
- * Flywheel, hood, turret.
- *
- * <p>autoAim() default command. Aim turret + hood from pose every loop.
- *
- * <p>targetRpm = one true flywheel speed. Every writer push it through applyFlywheel().
- * Spin-up commands write motor too: shot sequence hold shooter whole time, autoAim() no run.
- */
+/** Shooter. Flywheel, hood, turret. */
 public class Shooter implements Mechanism {
 
-    /** Real angle-per-tick. NextFTC default = 1 radian per tick = garbage RPM. */
+    /** Flywheel motor. */
     private final NextMotor flywheel = new NextMotor(
             "flywheel", Units.Rotations.of(1.0 / Constants.FLYWHEEL_TICKS_PER_REV));
     // Not final. bindServos() replace each OpMode.
@@ -74,12 +67,7 @@ public class Shooter implements Mechanism {
         applyTuning();
     }
 
-    /**
-     * Make fresh hood + turret servos. Call every OpMode start.
-     *
-     * <p>SDK reset servo range + direction each OpMode. Fresh servo re-apply both, and first
-     * position always send.
-     */
+    /** Make fresh hood + turret servos. Call every OpMode start. */
     public void bindServos() {
         hood = new NextServo("hood");
         turretLeft = new NextServo("turretLeft");
@@ -94,10 +82,7 @@ public class Shooter implements Mechanism {
         servo.setDirection(reversed ? NextMotor.Direction.REVERSE : NextMotor.Direction.FORWARD);
     }
 
-    /**
-     * Copy tunables into motor gains, encoder scaling, debouncer. Run every loop so Panels
-     * edits work live. NextFTC gains default zero = flywheel get zero power.
-     */
+    /** Copy tunables into motor gains, encoder scaling, debouncer. */
     private void applyTuning() {
         MotorVelocityConstants velocity = flywheel.getVelocityConstants();
         velocity.setKP(Constants.FLYWHEEL_KP);
@@ -275,10 +260,7 @@ public class Shooter implements Mechanism {
         });
     }
 
-    /**
-     * Raw control, for testing. Flywheel raw power. Turret + hood raw servo position, skip degree
-     * math. Own shooter while running, autoAim() off.
-     */
+    /** Raw control for testing. Flywheel power, turret + hood servo position. */
     public Command manualControl(
             DoubleSupplier power, DoubleSupplier turretPosition, DoubleSupplier hoodPosition) {
         return infinite(() -> {

@@ -1,8 +1,6 @@
 package org.firstinspires.ftc.teamcode.globals;
 
-/**
- * Alliance. Field numbers made for BLUE. RED = mirror, same as visualizer mirror.
- */
+/** Alliance. */
 public enum Alliance {
     BLUE,
     RED

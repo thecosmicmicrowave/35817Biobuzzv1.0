@@ -17,14 +17,7 @@ import dev.nextftc.robot.opmode.NextOpMode;
 import dev.nextftc.robot.opmode.NextTeleop;
 import dev.nextftc.robot.triggers.CommandGamepad;
 
-/**
- * Driver OpMode.
- *
- * <p>Drive with Pedro manual drive. Pedro own drive motors.
- *
- * <p>Order matter: follower.manual() here in periodic(), follower.update() after in
- * Robot.periodic().
- */
+/** Main driver OpMode. */
 @NextTeleop(name = "Main TeleOp")
 public class MainTeleOp extends NextOpMode {
 
@@ -106,6 +99,7 @@ public class MainTeleOp extends NextOpMode {
             return;
         }
 
+        // follower.update() run after this, in Robot.periodic().
         DrivePowers powers = ManualDrive.fieldCentric(
                 -gamepad1.left_stick_y,
                 gamepad1.left_stick_x,

@@ -15,17 +15,7 @@ import java.util.Set;
 import dev.nextftc.robot.Mechanism;
 import dev.nextftc.robot.NextRobot;
 
-/**
- * Robot. NextFTC find it, give to every OpMode. Only one, public no-arg constructor.
- *
- * <p>No static instance. Sloth reload make new robot, static keep old dead one. Pass robot
- * as parameter.
- *
- * <p>No drive motors here. Pedro Follower own them.
- *
- * <p>Built once, live across OpModes. Every OpMode call bindHardware(), initFollower(),
- * reset().
- */
+/** Robot class. Holds whole robot. */
 public class Robot implements NextRobot {
 
     public final IntakeTransfer intake = new IntakeTransfer();
@@ -35,10 +25,10 @@ public class Robot implements NextRobot {
 
     private Alliance alliance = Alliance.BLUE;
 
-    /** Latest pose. Kept here, survive follower rebuild next OpMode. */
+    /** Latest pose. */
     private Pose lastPose = Constants.DEFAULT_START_POSE;
 
-    /** Auto set it, next teleop use it. */
+    /** Auto handoff waiting for teleop. */
     private boolean autoHandoffPending = false;
 
     public Robot() {
@@ -54,10 +44,7 @@ public class Robot implements NextRobot {
         }
     }
 
-    /**
-     * Start auto: set alliance, start follower at start pose, mark handoff for teleop.
-     * False = no follower (pedro/Constants.create() not done).
-     */
+    /** Start auto: set alliance, start follower, mark handoff. False = no follower. */
     public boolean beginAuto(HardwareMap hardwareMap, Alliance alliance, Pose startPose) {
         this.alliance = alliance;
         initFollower(hardwareMap, startPose);
@@ -71,14 +58,14 @@ public class Robot implements NextRobot {
         return autoHandoffPending;
     }
 
-    /** Teleop start pose: where auto ended, else default. Use once, then gone. */
+    /** Teleop start pose: auto end pose, else default. Use once. */
     public Pose takeHandoffPose() {
         Pose pose = autoHandoffPending ? lastPose : Constants.DEFAULT_START_POSE;
         autoHandoffPending = false;
         return pose;
     }
 
-    /** Fresh servos, re-apply range + direction. First thing every OpMode. */
+    /** Fresh servos. Call first every OpMode. */
     public void bindHardware() {
         shooter.bindServos();
         intake.bindServos();
@@ -117,7 +104,7 @@ public class Robot implements NextRobot {
         this.alliance = alliance;
     }
 
-    /** Robot pose now. Default before follower exist. Never throw. */
+    /** Robot pose now. Default if no follower. */
     public Pose pose() {
         return follower == null ? Constants.DEFAULT_START_POSE : follower.pose();
     }

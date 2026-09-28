@@ -14,29 +14,7 @@ import dev.nextftc.robot.opmode.NextOpMode;
 import dev.nextftc.robot.opmode.NextTeleop;
 import dev.nextftc.robot.triggers.CommandGamepad;
 
-/**
- * Shooter test + calibration. Flywheel, turret, hood.
- *
- * <p>All raw. Flywheel raw power. Turret + hood raw servo position. One held command own
- * shooter whole run, autoAim() off, nothing move unless you move it.
- *
- * <h2>Flywheel</h2>
- * <p>Step power up, wait RPM settle, read implied kV. Put in FLYWHEEL_KV. RPM crazy = wrong
- * FLYWHEEL_TICKS_PER_REV. RPM zero but spinning = encoder not plugged.
- *
- * <h2>Turret</h2>
- * <ol>
- *   <li>Point turret straight forward. X mark it. Set TURRET_CENTER_POSITION in Panels.</li>
- *   <li>Move to other angle. BACK mark it.</li>
- *   <li>Measure angle with protractor. Compare to predicted angle on telemetry.</li>
- *   <li>Off? Change TURRET_SERVO_TRAVEL_DEG in Panels till match. Near 270 = servo not
- *       reprogrammed. Other = PWM range wrong.</li>
- * </ol>
- *
- * <p>Limits: step slow to stop, back off, read degrees.
- *
- * <p><b>Small steps. Stop if servo buzz or bind. Servo on hardstop burn.</b>
- */
+/** Shooter test. Raw control flywheel, turret, hood. */
 @NextTeleop(name = "Shooter Test", group = "test")
 public class ShooterTest extends NextOpMode {
 
@@ -79,7 +57,7 @@ public class ShooterTest extends NextOpMode {
         driver.leftTrigger().isOver(0.5).onTrue(Commands.instant(() -> adjustPower(-POWER_STEP)));
         driver.b().onTrue(Commands.instant(() -> power = 0));
 
-        // Turret.
+        // Turret. Small steps near ends, servo on hardstop burn.
         driver.dpadLeft().onTrue(Commands.instant(() -> adjustTurret(-FINE_STEP)));
         driver.dpadRight().onTrue(Commands.instant(() -> adjustTurret(FINE_STEP)));
         driver.leftBumper().onTrue(Commands.instant(() -> adjustTurret(-COARSE_STEP)));
@@ -91,15 +69,13 @@ public class ShooterTest extends NextOpMode {
         driver.a().onTrue(Commands.instant(() -> adjustHood(-COARSE_STEP)));
         driver.y().onTrue(Commands.instant(() -> adjustHood(COARSE_STEP)));
 
-        // Calibration marks.
+        // Calibration marks. X = center, BACK = reference.
+        // Predicted angle off from protractor = fix TURRET_SERVO_TRAVEL_DEG.
         driver.x().onTrue(Commands.instant(() -> centerMark = turretPosition));
         driver.back().onTrue(Commands.instant(() -> referenceMark = turretPosition));
     }
 
-    /**
-     * Sticks. Scaled by loop time, same speed any loop rate.
-     * Left X = turret. Right Y = hood, push up = position up (SDK Y negative when up).
-     */
+    /** Stick control. Left X = turret, right Y = hood. */
     private void driveFromSticks() {
         long now = System.nanoTime();
         // Cap. Slow loop no big jump.
@@ -165,6 +141,7 @@ public class ShooterTest extends NextOpMode {
         Telemetry.log("applied throttle", String.format("%.2f", robot.shooter.flywheelThrottle()));
         Telemetry.log("measured RPM", String.format("%.0f", rpm));
         Telemetry.log("current (A)", String.format("%.2f", robot.shooter.flywheelCurrentAmps()));
+        // Implied kV: let RPM settle, put in FLYWHEEL_KV.
         if (Math.abs(rpm) > 1) {
             Telemetry.log("implied kV (power/RPM)", String.format("%.8f", power / rpm));
         } else {

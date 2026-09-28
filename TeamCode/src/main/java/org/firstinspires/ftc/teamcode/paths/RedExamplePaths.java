@@ -7,8 +7,7 @@ import com.pedropathing.api.PoseFactory;
 import com.pedropathing.math.Pose;
 import com.pedropathing.paths.Path;
 
-// Fake visualizer export, mirror on, real format. Replace with real export.
-// Never hand-edit real one.
+// Fake export, mirror on. Replace with real one.
 public class RedExamplePaths {
     private final PoseFactory poseFactory = PoseFactory.degrees().mirrorX(72);
 

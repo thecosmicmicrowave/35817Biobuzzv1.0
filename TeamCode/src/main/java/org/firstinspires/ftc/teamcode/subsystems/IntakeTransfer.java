@@ -8,12 +8,7 @@ import dev.nextftc.hardware.actuators.NextMotor;
 import dev.nextftc.hardware.actuators.NextServo;
 import dev.nextftc.robot.Mechanism;
 
-/**
- * Two-stage intake, gate, flower arm.
- *
- * <p>Default command stop motors only. Never touch servos, else it undo openGate() /
- * deployFlower() next frame.
- */
+/** Intake. Two stages, gate, flower arm. */
 public class IntakeTransfer implements Mechanism {
 
     private final NextMotor stage1 = new NextMotor("stage1");
@@ -30,12 +25,7 @@ public class IntakeTransfer implements Mechanism {
         bindServos();
     }
 
-    /**
-     * Make fresh gate + flower servos. Call every OpMode start.
-     *
-     * <p>SDK reset servo direction each OpMode. Fresh servo keep flowerRight reversed, arm no
-     * fight itself.
-     */
+    /** Make fresh gate + flower servos. Call every OpMode start. */
     public void bindServos() {
         gate = new NextServo("gate");
         flowerLeft = new NextServo("flowerLeft");
@@ -94,7 +84,7 @@ public class IntakeTransfer implements Mechanism {
         });
     }
 
-    /** Default command. Motors off only. */
+    /** Default command. Motors off only, never touch servos. */
     public Command stopRollers() {
         return infinite(() -> {
             stage1.setThrottle(0);
@@ -118,10 +108,7 @@ public class IntakeTransfer implements Mechanism {
         });
     }
 
-    /**
-     * Gate open, both stages run. Empty robot. One command, not feed() + intake(): both need
-     * this mechanism, would fight.
-     */
+    /** Gate open, both stages run. Empty robot. */
     public Command volley() {
         return infinite(() -> {
             applyGate(true);
@@ -130,7 +117,7 @@ public class IntakeTransfer implements Mechanism {
         });
     }
 
-    /** Stop both stages, gate untouched. For auto, default no run there. */
+    /** Stop both stages, gate untouched. */
     public Command stopIntake() {
         return instant(() -> {
             stage1.setThrottle(0);

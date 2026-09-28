@@ -15,12 +15,7 @@ import dev.nextftc.robot.Telemetry;
 import dev.nextftc.robot.opmode.BulkReadHook;
 import dev.nextftc.robot.opmode.NextOpMode;
 
-/**
- * Example auto: drive to shoot spot aiming, shoot all.
- *
- * <p>Pattern for every auto. Routine write once here, both alliances. Blue/Red subclass pick
- * alliance + paths. Movement from visualizer export. Actions in routine().
- */
+/** Example auto. Drive to shoot spot, shoot all. */
 public abstract class ExampleAuto extends NextOpMode {
 
     private final Robot robot;
@@ -45,7 +40,7 @@ public abstract class ExampleAuto extends NextOpMode {
         robot.reset();
     }
 
-    /** Routine. Say every mechanism action, defaults no run. */
+    /** Auto routine. */
     private Command routine() {
         return sequential(
                 AutoCommands.driveAiming(robot, route.driveToShoot()),

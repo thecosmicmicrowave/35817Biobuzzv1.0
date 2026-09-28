@@ -6,19 +6,11 @@ import com.pedropathing.math.Pose;
 import dev.nextftc.control.util.InterpolatingMap;
 import kotlin.jvm.functions.Function3;
 
-/**
- * Field geometry + tuning numbers. All placeholder until tuned. Tune here only.
- *
- * <p>@Configurable = shows in Panels. Panels need static, NOT final. Final also get baked into
- * code at compile, edits never seen. So tunables not final.
- *
- * <p>Panels edits live, not saved. Copy good value back here.
- *
- * <p>Computed values = methods, recompute every read. Fixed physical stuff stay final, hidden
- * from Panels.
- */
+/** Tuning numbers + field geometry. */
 @Configurable
 public final class Constants {
+
+    // Tunables: static, not final. Panels need it.
 
     private Constants() {
     }
@@ -37,30 +29,16 @@ public final class Constants {
 
     // ---------------------------------------------------------------- turret geometry
     //
-    // Two SWYFT Balance servos, 60t gear each, drive 20t gear on shaft.
-    // 65t gear on shaft drive 169t turret ring:
-    //
-    //     turret deg per servo deg = (60 / 20) * (65 / 169) = 15 / 13 ~= 1.154
-    //
-    // Turret turn MORE than servo. All below come from these numbers.
+    // turret deg per servo deg = (60 / 20) * (65 / 169) = 15 / 13 ~= 1.154
 
-    /**
-     * One turret servo full travel, 0..1 position. SWYFT ship 270, 320 need reprogram.
-     * Only right if PWM range below match servo programmer.
-     */
+    /** One turret servo full travel, degrees. */
     public static double TURRET_SERVO_TRAVEL_DEG = 320;
 
-    /**
-     * Turret servo pulse range, from SWYFT programmer Min/Max Signal. Must match. SDK default
-     * 600-2400 = only 90% travel, turret ~28 deg short.
-     */
+    /** Turret servo pulse range, us. Match SWYFT programmer. */
     public static final double TURRET_SERVO_PWM_MIN_US = 500;
     public static final double TURRET_SERVO_PWM_MAX_US = 2500;
 
-    /**
-     * Turret servo direction flags. Real direction = this flag + programmer Reverse toggle.
-     * Reversed both places = forward. Both servos must turn turret same way.
-     */
+    /** Turret servo directions. */
     public static final boolean TURRET_LEFT_REVERSED = false;
     public static final boolean TURRET_RIGHT_REVERSED = false;
 
@@ -89,13 +67,13 @@ public final class Constants {
 
     public static final double TURRET_CENTER_DEG = 0;
 
-    /** Servo position where turret point straight forward. Find with Shooter Test. */
+    /** Servo position, turret straight forward. */
     public static double TURRET_CENTER_POSITION = 0.5;
 
-    /** Stay this far from each end of travel. Servo no stall on stop. */
+    /** Gap kept from each end of travel. */
     public static double TURRET_LIMIT_MARGIN_DEG = 2.0;
 
-    /** Turret limits, deg from robot forward. From travel ends minus margin, max +/-180. */
+    /** Turret limits, deg from robot forward. */
     public static double turretMinDeg() {
         return Math.max(-180, TURRET_CENTER_DEG - TURRET_CENTER_POSITION / turretPositionPerDeg()
                 + TURRET_LIMIT_MARGIN_DEG);
@@ -108,10 +86,10 @@ public final class Constants {
 
     // ---------------------------------------------------------------- turret timing
 
-    /** Base settle wait every turret move. Guess, servo no report. */
+    /** Base settle wait per turret move. */
     public static double TURRET_SETTLE_BASE_MS = 60;
 
-    /** Extra settle wait per degree moved. Servo ~1.3 ms/deg, 2.0 for margin. */
+    /** Extra settle wait per degree moved. */
     public static double TURRET_SETTLE_MS_PER_DEG = 2.0;
 
     /** Smaller move no restart settle timer. */
@@ -126,7 +104,7 @@ public final class Constants {
     /** Shooter Test turret speed at full stick, deg/sec. */
     public static double TURRET_STICK_DEG_PER_SEC = 250;
 
-    /** Stick below this ignored. No creep. */
+    /** Stick below this ignored. */
     public static double STICK_DEADZONE = 0.05;
 
     // ---------------------------------------------------------------- hood
@@ -143,13 +121,10 @@ public final class Constants {
 
     // ---------------------------------------------------------------- flywheel
 
-    /** Flywheel encoder ticks per rev. 28 = bare motor. Wrong = all RPM wrong. */
+    /** Flywheel encoder ticks per rev. */
     public static double FLYWHEEL_TICKS_PER_REV = 28.0;
 
-    /**
-     * Flywheel velocity gains. All zero = zero power, no spin. kV biggest: ~1 / free RPM.
-     * Add kP only after kV close.
-     */
+    /** Flywheel velocity gains. */
     public static double FLYWHEEL_KP = 0.0;
     public static double FLYWHEEL_KI = 0.0;
     public static double FLYWHEEL_KD = 0.0;
@@ -157,7 +132,7 @@ public final class Constants {
     public static double FLYWHEEL_KV = 1.0 / 6000.0;
     public static double FLYWHEEL_KA = 0.0;
 
-    /** Idle speed between shots. Next spin-up faster. */
+    /** Idle speed between shots. */
     public static double IDLE_RPM = 1000;
 
     /** This close to target = at speed. */
@@ -192,16 +167,16 @@ public final class Constants {
     /** Both stages run time to empty robot. */
     public static double VOLLEY_TIME_MS = 2000;
 
-    /** Max wait for flywheel speed. Bad tune no stall match. */
+    /** Max wait for flywheel speed. */
     public static double SPINUP_TIMEOUT_MS = 2000;
 
     // ---------------------------------------------------------------- drivetrain
     //
-    // Drive motor names + directions live in pedro/Constants.java. Pedro own drive motors.
+    // Drive motors set in pedro/Constants.java.
 
     // ---------------------------------------------------------------- lookup tables
 
-    /** Straight-line blend between two table entries. Typed so right constructor picked. */
+    /** Blend between two table entries. */
     private static final Function3<Double, Double, Double, Double> LERP =
             (lower, upper, t) -> lower + (upper - lower) * t;
 
@@ -212,8 +187,7 @@ public final class Constants {
     public static final InterpolatingMap<Double> DISTANCE_TO_HOOD = new InterpolatingMap<>(LERP);
 
     static {
-        // Placeholders so tables never empty. Replace all when tuning:
-        // shoot from measured distance, adjust till score, write pair.
+        // Placeholders. Replace when tuning.
         DISTANCE_TO_RPM.put(24.0, 2000.0);
         DISTANCE_TO_RPM.put(120.0, 3500.0);
 
@@ -223,12 +197,12 @@ public final class Constants {
 
     // ---------------------------------------------------------------- helpers
 
-    /** Goal x for alliance. Red = blue mirrored, x -> 144 - x. Same as visualizer mirror. */
+    /** Goal x for alliance. */
     public static double goalX(Alliance alliance) {
         return alliance == Alliance.RED ? FIELD_SIZE_IN - GOAL_X : GOAL_X;
     }
 
-    /** Goal y for alliance. Mirror no change y. */
+    /** Goal y for alliance. */
     public static double goalY(Alliance alliance) {
         return GOAL_Y;
     }
