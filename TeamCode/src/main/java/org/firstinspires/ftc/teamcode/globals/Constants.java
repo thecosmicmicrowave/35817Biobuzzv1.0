@@ -110,7 +110,7 @@ public final class Constants {
     // ---------------------------------------------------------------- hood
 
     public static double HOOD_MIN_POSITION = 0.0;
-    public static double HOOD_MAX_POSITION = 0.4;
+    public static double HOOD_MAX_POSITION = 0.45;
     public static double HOOD_STOWED_POSITION = 0.0;
 
     /** Hood trim per press. */

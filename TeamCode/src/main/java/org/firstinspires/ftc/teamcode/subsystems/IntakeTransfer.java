@@ -4,6 +4,8 @@ import com.pedropathing.ivy.Command;
 
 import org.firstinspires.ftc.teamcode.globals.Constants;
 
+import java.util.function.DoubleSupplier;
+
 import dev.nextftc.hardware.actuators.NextMotor;
 import dev.nextftc.hardware.actuators.NextServo;
 import dev.nextftc.robot.Mechanism;
@@ -90,6 +92,11 @@ public class IntakeTransfer implements Mechanism {
             stage1.setThrottle(0);
             stage2.setThrottle(0);
         });
+    }
+
+    /** Raw gate servo position. For tuning. */
+    public Command gateTo(DoubleSupplier position) {
+        return infinite(() -> gate.setPosition(Constants.clamp(position.getAsDouble(), 0, 1)));
     }
 
     public Command openGate() {
