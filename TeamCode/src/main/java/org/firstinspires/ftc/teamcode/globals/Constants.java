@@ -143,8 +143,8 @@ public final class Constants {
 
     // ---------------------------------------------------------------- gate
 
-    public static double GATE_OPEN_POSITION = 0.6;
-    public static double GATE_CLOSED_POSITION = 0.2;
+    public static double GATE_OPEN_POSITION = 0.42;
+    public static double GATE_CLOSED_POSITION = 0.23;
 
     // ---------------------------------------------------------------- flower arm
 
