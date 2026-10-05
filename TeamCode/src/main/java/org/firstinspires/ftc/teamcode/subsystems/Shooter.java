@@ -252,6 +252,12 @@ public class Shooter implements Mechanism {
         });
     }
 
+    /** Do nothing, own shooter. autoAim() off, nothing move. */
+    public Command standby() {
+        return infinite(() -> {
+        });
+    }
+
     public Command stopFlywheel() {
         return instant(() -> {
             armed = false;
@@ -365,13 +371,15 @@ public class Shooter implements Mechanism {
         return Math.abs(currentRpm() - targetRpm) <= Constants.RPM_TOLERANCE;
     }
 
-    /** Read table. Empty table = fallback. */
+    /** Read table. Key clamped to table range. Empty table = fallback. */
     private static double lookUp(
             dev.nextftc.control.util.InterpolatingMap<Double> map, double key, double fallback) {
         if (map.isEmpty()) {
             return fallback;
         }
-        Double value = map.get(key);
+        // Table throw on key outside range. Clamp to nearest entry.
+        double clamped = Constants.clamp(key, map.firstKey(), map.lastKey());
+        Double value = map.get(clamped);
         return value == null ? fallback : value;
     }
 }

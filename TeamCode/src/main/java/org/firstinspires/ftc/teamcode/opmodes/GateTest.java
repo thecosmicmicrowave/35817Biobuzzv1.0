@@ -60,6 +60,8 @@ public class GateTest extends NextOpMode {
     public void start() {
         // Schedule once. Own intake whole OpMode.
         robot.intake.gateTo(() -> position).schedule();
+        // Hold shooter. No auto-aim, turret stay still.
+        robot.shooter.standby().schedule();
     }
 
     @Override
