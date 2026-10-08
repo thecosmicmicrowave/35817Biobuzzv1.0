@@ -105,6 +105,29 @@ public class IntakeTransfer implements Mechanism {
         });
     }
 
+    /** Raw control for testing. Stage powers, gate + flower servo position. Null = leave alone. */
+    public Command manualControl(
+            DoubleSupplier stage1Power, DoubleSupplier stage2Power,
+            DoubleSupplier gatePosition, DoubleSupplier flowerPosition) {
+        return infinite(() -> {
+            if (stage1Power != null) {
+                stage1.setThrottle(Constants.clamp(stage1Power.getAsDouble(), -1.0, 1.0));
+            }
+            if (stage2Power != null) {
+                stage2.setThrottle(Constants.clamp(stage2Power.getAsDouble(), -1.0, 1.0));
+            }
+            if (gatePosition != null) {
+                gate.setPosition(Constants.clamp(gatePosition.getAsDouble(), 0, 1));
+            }
+            if (flowerPosition != null) {
+                double flower = Constants.clamp(flowerPosition.getAsDouble(), 0, 1);
+                // flowerRight reversed in bindServos(). Both get same position.
+                flowerLeft.setPosition(flower);
+                flowerRight.setPosition(flower);
+            }
+        });
+    }
+
     /** Raw stage 1 + stage 2 power. For testing. Gate untouched. */
     public Command rollersTo(DoubleSupplier stage1Power, DoubleSupplier stage2Power) {
         return infinite(() -> {

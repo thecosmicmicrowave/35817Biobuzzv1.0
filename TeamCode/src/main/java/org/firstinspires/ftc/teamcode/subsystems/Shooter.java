@@ -266,18 +266,24 @@ public class Shooter implements Mechanism {
         });
     }
 
-    /** Raw control for testing. Flywheel power, turret + hood servo position. */
+    /** Raw control for testing. Flywheel power, turret + hood servo position. Null = leave alone. */
     public Command manualControl(
             DoubleSupplier power, DoubleSupplier turretPosition, DoubleSupplier hoodPosition) {
         return infinite(() -> {
-            flywheel.setThrottle(Constants.clamp(power.getAsDouble(), -1.0, 1.0));
+            if (power != null) {
+                flywheel.setThrottle(Constants.clamp(power.getAsDouble(), -1.0, 1.0));
+            }
 
-            double turret = Constants.clamp(turretPosition.getAsDouble(), 0, 1);
-            // Directions set in bindServos(). Both get same value.
-            turretLeft.setPosition(turret);
-            turretRight.setPosition(turret);
+            if (turretPosition != null) {
+                double turret = Constants.clamp(turretPosition.getAsDouble(), 0, 1);
+                // Directions set in bindServos(). Both get same value.
+                turretLeft.setPosition(turret);
+                turretRight.setPosition(turret);
+            }
 
-            hood.setPosition(Constants.clamp(hoodPosition.getAsDouble(), 0, 1));
+            if (hoodPosition != null) {
+                hood.setPosition(Constants.clamp(hoodPosition.getAsDouble(), 0, 1));
+            }
         });
     }
 
