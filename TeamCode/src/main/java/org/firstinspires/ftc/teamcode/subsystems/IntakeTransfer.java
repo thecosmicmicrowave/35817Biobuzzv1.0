@@ -9,6 +9,7 @@ import java.util.function.DoubleSupplier;
 import dev.nextftc.hardware.actuators.NextMotor;
 import dev.nextftc.hardware.actuators.NextServo;
 import dev.nextftc.robot.Mechanism;
+import dev.nextftc.units.Units;
 
 /** Intake. Two stages, gate, flower arm. */
 public class IntakeTransfer implements Mechanism {
@@ -60,6 +61,16 @@ public class IntakeTransfer implements Mechanism {
         return flowerDeployed;
     }
 
+    /** Stage 1 amps. */
+    public double stage1CurrentAmps() {
+        return stage1.getCurrent().into(Units.Amperes);
+    }
+
+    /** Stage 2 amps. */
+    public double stage2CurrentAmps() {
+        return stage2.getCurrent().into(Units.Amperes);
+    }
+
     // ---------------------------------------------------------------- commands
 
     /** Both stages in, gate closed. Artifacts stack on gate. */
@@ -91,6 +102,14 @@ public class IntakeTransfer implements Mechanism {
         return infinite(() -> {
             stage1.setThrottle(0);
             stage2.setThrottle(0);
+        });
+    }
+
+    /** Raw stage 1 + stage 2 power. For testing. Gate untouched. */
+    public Command rollersTo(DoubleSupplier stage1Power, DoubleSupplier stage2Power) {
+        return infinite(() -> {
+            stage1.setThrottle(Constants.clamp(stage1Power.getAsDouble(), -1.0, 1.0));
+            stage2.setThrottle(Constants.clamp(stage2Power.getAsDouble(), -1.0, 1.0));
         });
     }
 
