@@ -213,22 +213,33 @@ public class Shooter implements Mechanism {
 
     /** Default command. Aim at goal, refresh flywheel. Other commands interrupt, it come back. */
     public Command autoAim() {
-        return infinite(() -> {
-            double distance = distanceToGoal();
+        return infinite(this::aimAtGoal);
+    }
 
-            // Manual override take turret only. Hood keep tracking.
-            if (!manualOverride) {
-                applyTurret(Constants.clamp(bearingToGoal() + turretOffsetDeg,
-                        Constants.turretMinDeg(), Constants.turretMaxDeg()));
-            }
-            applyHood(Constants.clamp(
-                    lookUp(Constants.DISTANCE_TO_HOOD, distance, commandedHoodPosition) + hoodOffset,
-                    Constants.HOOD_MIN_POSITION, Constants.HOOD_MAX_POSITION));
-            if (armed) {
-                targetRpm = lookUp(Constants.DISTANCE_TO_RPM, distance, targetRpm);
-            }
-            applyFlywheel();
-        });
+    /** Aim turret + hood at goal. Done when turret arrive. */
+    public Command aim() {
+        // Aim in start too, so settle timer running before first done check.
+        return infinite(this::aimAtGoal)
+                .setStart(this::aimAtGoal)
+                .setDone(this::turretSettled);
+    }
+
+    /** One aim step. Turret + hood from pose, flywheel refreshed. */
+    private void aimAtGoal() {
+        double distance = distanceToGoal();
+
+        // Manual override take turret only. Hood keep tracking.
+        if (!manualOverride) {
+            applyTurret(Constants.clamp(bearingToGoal() + turretOffsetDeg,
+                    Constants.turretMinDeg(), Constants.turretMaxDeg()));
+        }
+        applyHood(Constants.clamp(
+                lookUp(Constants.DISTANCE_TO_HOOD, distance, commandedHoodPosition) + hoodOffset,
+                Constants.HOOD_MIN_POSITION, Constants.HOOD_MAX_POSITION));
+        if (armed) {
+            targetRpm = lookUp(Constants.DISTANCE_TO_RPM, distance, targetRpm);
+        }
+        applyFlywheel();
     }
 
     /** Arm. Spin to table RPM for current distance. */
