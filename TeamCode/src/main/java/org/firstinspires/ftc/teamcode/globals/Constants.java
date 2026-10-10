@@ -21,12 +21,12 @@ public final class Constants {
     public static final double FIELD_SIZE_IN = 144;
 
     /** Goal A spot, inches, BLUE alliance. Use goalX()/goalY(), they mirror for red. */
-    public static double GOAL_A_X = 72;
-    public static double GOAL_A_Y = 144;
+    public static double GOAL_A_X = 83.7;
+    public static double GOAL_A_Y = 82.5;
 
     /** Goal B spot, inches, BLUE alliance. */
-    public static double GOAL_B_X = 60;
-    public static double GOAL_B_Y = 144;
+    public static double GOAL_B_X = 83.7;
+    public static double GOAL_B_Y = 54.5;
 
     /** Start pose when OpMode give none. */
     public static final Pose DEFAULT_START_POSE = new Pose(0, 0, 0);
