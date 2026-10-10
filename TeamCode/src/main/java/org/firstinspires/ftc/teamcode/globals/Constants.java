@@ -159,18 +159,23 @@ public final class Constants {
 
     // ---------------------------------------------------------------- intake powers
 
-    // Negative = toward shooter on this robot.
+    // Positive = toward shooter, both stages. Motor mirroring handled by signs below.
+
+    /** Motor sign that move stage toward shooter. Stages mounted opposite. */
+    public static final double STAGE1_SIGN = -1.0;
+    public static final double STAGE2_SIGN = 1.0;
+
     /** Intaking: stage 1 pull in. */
-    public static double STAGE1_INTAKE_POWER = -1.0;
+    public static double STAGE1_INTAKE_POWER = 1.0;
 
     /** Intaking: stage 2 half speed backwards. */
-    public static double STAGE2_INTAKE_POWER = 0.5;
+    public static double STAGE2_INTAKE_POWER = -0.5;
 
     /** Feeding: both stages toward shooter. */
-    public static double FEED_POWER = -1.0;
+    public static double FEED_POWER = 1.0;
 
     /** Eject: both stages away from shooter. */
-    public static double EJECT_POWER = 1.0;
+    public static double EJECT_POWER = -1.0;
 
     // ---------------------------------------------------------------- timing
 

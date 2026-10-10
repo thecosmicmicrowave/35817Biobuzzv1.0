@@ -75,8 +75,7 @@ public class IntakeTransfer implements Mechanism {
     /** Stage 1 in, stage 2 half speed backwards. Gate closed. */
     public Command intake() {
         return infinite(() -> {
-            stage1.setThrottle(Constants.STAGE1_INTAKE_POWER);
-            stage2.setThrottle(Constants.STAGE2_INTAKE_POWER);
+            setStages(Constants.STAGE1_INTAKE_POWER, Constants.STAGE2_INTAKE_POWER);
         });
     }
 
@@ -96,10 +95,10 @@ public class IntakeTransfer implements Mechanism {
             DoubleSupplier gatePosition, DoubleSupplier flowerPosition) {
         return infinite(() -> {
             if (stage1Power != null) {
-                stage1.setThrottle(Constants.clamp(stage1Power.getAsDouble(), -1.0, 1.0));
+                setStage1(stage1Power.getAsDouble());
             }
             if (stage2Power != null) {
-                stage2.setThrottle(Constants.clamp(stage2Power.getAsDouble(), -1.0, 1.0));
+                setStage2(stage2Power.getAsDouble());
             }
             if (gatePosition != null) {
                 gate.setPosition(Constants.clamp(gatePosition.getAsDouble(), 0, 1));
@@ -116,8 +115,7 @@ public class IntakeTransfer implements Mechanism {
     /** Raw stage 1 + stage 2 power. For testing. Gate untouched. */
     public Command rollersTo(DoubleSupplier stage1Power, DoubleSupplier stage2Power) {
         return infinite(() -> {
-            stage1.setThrottle(Constants.clamp(stage1Power.getAsDouble(), -1.0, 1.0));
-            stage2.setThrottle(Constants.clamp(stage2Power.getAsDouble(), -1.0, 1.0));
+            setStages(stage1Power.getAsDouble(), stage2Power.getAsDouble());
         });
     }
 
@@ -171,10 +169,24 @@ public class IntakeTransfer implements Mechanism {
 
     // ---------------------------------------------------------------- hardware
 
-    /** Both stages, same power. */
+    /** Both stages, same power. Positive = toward shooter. */
     private void runStages(double power) {
-        stage1.setThrottle(power);
-        stage2.setThrottle(power);
+        setStages(power, power);
+    }
+
+    /** Each stage own power. Positive = toward shooter. */
+    private void setStages(double stage1Power, double stage2Power) {
+        setStage1(stage1Power);
+        setStage2(stage2Power);
+    }
+
+    // Stages mounted opposite. Only place motor sign applied.
+    private void setStage1(double power) {
+        stage1.setThrottle(Constants.clamp(power, -1.0, 1.0) * Constants.STAGE1_SIGN);
+    }
+
+    private void setStage2(double power) {
+        stage2.setThrottle(Constants.clamp(power, -1.0, 1.0) * Constants.STAGE2_SIGN);
     }
 
     private void applyGate(boolean open) {
