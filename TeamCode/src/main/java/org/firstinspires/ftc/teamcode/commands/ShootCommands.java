@@ -16,7 +16,8 @@ public final class ShootCommands {
     public static Command shootOne(Robot robot) {
         return robot.shooter.spinUp()
                 .then(waitForShot(robot))
-                .then(robot.intake.feed().raceWith(Commands.waitMs(Constants.FEED_TIME_MS)))
+                .then(robot.intake.feed().raceWith(
+                        Commands.waitMs(Constants.GATE_OPEN_DELAY_MS + Constants.FEED_TIME_MS)))
                 .then(robot.intake.stopFeed())
                 .then(robot.shooter.idleFlywheel());
     }
@@ -25,7 +26,8 @@ public final class ShootCommands {
     public static Command shootAll(Robot robot) {
         return robot.shooter.spinUp()
                 .then(waitForShot(robot))
-                .then(robot.intake.feed().raceWith(Commands.waitMs(Constants.VOLLEY_TIME_MS)))
+                .then(robot.intake.feed().raceWith(
+                        Commands.waitMs(Constants.GATE_OPEN_DELAY_MS + Constants.VOLLEY_TIME_MS)))
                 .then(robot.intake.stopFeed())
                 .then(robot.shooter.idleFlywheel());
     }
@@ -41,7 +43,8 @@ public final class ShootCommands {
                 .then(robot.shooter.hoodTo(hoodPosition))
                 .then(robot.shooter.turretTo(turretDeg))
                 .then(waitForShot(robot))
-                .then(robot.intake.feed().raceWith(Commands.waitMs(Constants.FEED_TIME_MS)))
+                .then(robot.intake.feed().raceWith(
+                        Commands.waitMs(Constants.GATE_OPEN_DELAY_MS + Constants.FEED_TIME_MS)))
                 .then(robot.intake.stopFeed())
                 .then(robot.shooter.idleFlywheel());
     }

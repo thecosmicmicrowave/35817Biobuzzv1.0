@@ -132,11 +132,17 @@ public class IntakeTransfer implements Mechanism {
         return instant(() -> applyGate(false));
     }
 
-    /** Gate open, both stages push artifacts into flywheel. */
+    /** Gate open, wait GATE_OPEN_DELAY_MS, then both stages push artifacts into flywheel. */
     public Command feed() {
+        long[] startMs = new long[1];
         return infinite(() -> {
             applyGate(true);
-            runStages(Constants.FEED_POWER);
+            boolean gateClear =
+                    System.currentTimeMillis() - startMs[0] >= Constants.GATE_OPEN_DELAY_MS;
+            runStages(gateClear ? Constants.FEED_POWER : 0);
+        }).setStart(() -> {
+            startMs[0] = System.currentTimeMillis();
+            applyGate(true);
         });
     }
 

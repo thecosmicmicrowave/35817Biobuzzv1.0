@@ -152,6 +152,9 @@ public final class Constants {
     public static double GATE_OPEN_POSITION = 0.42;
     public static double GATE_CLOSED_POSITION = 0.23;
 
+    /** Wait after gate open before stages feed. Gate get out of way. */
+    public static double GATE_OPEN_DELAY_MS = 100;
+
     // ---------------------------------------------------------------- flower arm
 
     public static double FLOWER_STOWED_POSITION = 0.1;
