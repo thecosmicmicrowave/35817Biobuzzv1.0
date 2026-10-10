@@ -168,7 +168,7 @@ public final class Constants {
     public static double FEED_TIME_MS = 250;
 
     /** Both stages run time to empty robot. */
-    public static double VOLLEY_TIME_MS = 2000;
+    public static double VOLLEY_TIME_MS = 500;
 
     /** Max wait for flywheel speed. */
     public static double SPINUP_TIMEOUT_MS = 2000;
