@@ -33,7 +33,7 @@ public abstract class MainAuto extends NextOpMode {
         Telemetry.addBackend(PanelsTelemetry.INSTANCE.getFtcTelemetry());
 
         robot.bindHardware();
-        // Export "start" pose, not path1 start: headings differ.
+        // Start pose = export "start" pose.
         ready = robot.beginAuto(hardwareMap, alliance, StartPose.of(route));
         robot.reset();
     }

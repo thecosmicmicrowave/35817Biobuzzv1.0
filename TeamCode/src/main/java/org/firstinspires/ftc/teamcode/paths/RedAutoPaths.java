@@ -12,7 +12,7 @@ public class RedAutoPaths {
 
     private final PoseFactory poseFactory = PoseFactory.degrees();
 
-    private final Pose start = poseFactory.of(19.2305, 6.8101, 90);
+    private final Pose start = poseFactory.of(19.2305, 6.8101, 180);
     private final Pose path1Start = poseFactory.of(19.2305, 6.8101, 180);
     private final Pose path1 = poseFactory.of(7.5, 7, 180);
     private final Pose point2 = poseFactory.of(47.6751, 117.7702, 70.0649);
