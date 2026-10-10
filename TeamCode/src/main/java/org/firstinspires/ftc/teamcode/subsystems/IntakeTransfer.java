@@ -40,8 +40,7 @@ public class IntakeTransfer implements Mechanism {
 
     /** Known state. Motors off, gate closed, arm stowed. Flags match hardware. */
     public void reset() {
-        stage1.setThrottle(0);
-        stage2.setThrottle(0);
+        runStages(0);
         applyGate(false);
         applyFlower(false);
     }
@@ -75,34 +74,17 @@ public class IntakeTransfer implements Mechanism {
 
     /** Both stages in, gate closed. Artifacts stack on gate. */
     public Command intake() {
-        return infinite(() -> {
-            stage1.setThrottle(Constants.STAGE1_INTAKE_POWER);
-            stage2.setThrottle(Constants.STAGE2_INTAKE_POWER);
-        });
-    }
-
-    /** Stage 1 only. Stage 2 full. */
-    public Command intakeStage1Only() {
-        return infinite(() -> {
-            stage1.setThrottle(Constants.STAGE1_INTAKE_POWER);
-            stage2.setThrottle(0);
-        });
+        return infinite(() -> runStages(Constants.INTAKE_POWER));
     }
 
     /** Both stages reverse. Clear jam. */
     public Command eject() {
-        return infinite(() -> {
-            stage1.setThrottle(Constants.STAGE1_EJECT_POWER);
-            stage2.setThrottle(Constants.STAGE2_EJECT_POWER);
-        });
+        return infinite(() -> runStages(Constants.EJECT_POWER));
     }
 
     /** Default command. Motors off only, never touch servos. */
     public Command stopRollers() {
-        return infinite(() -> {
-            stage1.setThrottle(0);
-            stage2.setThrottle(0);
-        });
+        return infinite(() -> runStages(0));
     }
 
     /** Raw control for testing. Stage powers, gate + flower servo position. Null = leave alone. */
@@ -149,28 +131,18 @@ public class IntakeTransfer implements Mechanism {
         return instant(() -> applyGate(false));
     }
 
-    /** Gate open, stage 2 push artifacts into flywheel. */
+    /** Gate open, both stages push artifacts into flywheel. */
     public Command feed() {
         return infinite(() -> {
             applyGate(true);
-            stage2.setThrottle(Constants.STAGE2_FEED_POWER);
-        });
-    }
-
-    /** Gate open, both stages run. Empty robot. */
-    public Command volley() {
-        return infinite(() -> {
-            applyGate(true);
-            stage1.setThrottle(Constants.STAGE1_INTAKE_POWER);
-            stage2.setThrottle(Constants.STAGE2_FEED_POWER);
+            runStages(Constants.FEED_POWER);
         });
     }
 
     /** Stop both stages, gate untouched. */
     public Command stopIntake() {
         return instant(() -> {
-            stage1.setThrottle(0);
-            stage2.setThrottle(0);
+            runStages(0);
         });
     }
 
@@ -178,8 +150,7 @@ public class IntakeTransfer implements Mechanism {
     public Command stopFeed() {
         return instant(() -> {
             applyGate(false);
-            stage1.setThrottle(0);
-            stage2.setThrottle(0);
+            runStages(0);
         });
     }
 
@@ -196,6 +167,12 @@ public class IntakeTransfer implements Mechanism {
     }
 
     // ---------------------------------------------------------------- hardware
+
+    /** Both stages, same power. Stages always run together. */
+    private void runStages(double power) {
+        stage1.setThrottle(power);
+        stage2.setThrottle(power);
+    }
 
     private void applyGate(boolean open) {
         gateOpen = open;

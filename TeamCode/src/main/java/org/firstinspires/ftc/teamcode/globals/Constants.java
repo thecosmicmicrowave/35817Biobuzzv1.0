@@ -157,11 +157,10 @@ public final class Constants {
 
     // ---------------------------------------------------------------- intake powers
 
-    public static double STAGE1_INTAKE_POWER = 1.0;
-    public static double STAGE2_INTAKE_POWER = 1.0;
-    public static double STAGE1_EJECT_POWER = -1.0;
-    public static double STAGE2_EJECT_POWER = -1.0;
-    public static double STAGE2_FEED_POWER = 1.0;
+    // Stage 1 + stage 2 always run together, same power.
+    public static double INTAKE_POWER = 1.0;
+    public static double EJECT_POWER = -1.0;
+    public static double FEED_POWER = 1.0;
 
     // ---------------------------------------------------------------- timing
 

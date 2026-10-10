@@ -131,10 +131,10 @@ public class FullTest extends NextOpMode {
 
     /** Dpad up/down = stage 1 in/out. Dpad right/left = stage 2 in/out. Hold to run. */
     private void readStages() {
-        stage1Power = gamepad1.dpad_up ? Constants.STAGE1_INTAKE_POWER
-                : gamepad1.dpad_down ? Constants.STAGE1_EJECT_POWER : 0;
-        stage2Power = gamepad1.dpad_right ? Constants.STAGE2_INTAKE_POWER
-                : gamepad1.dpad_left ? Constants.STAGE2_EJECT_POWER : 0;
+        stage1Power = gamepad1.dpad_up ? Constants.INTAKE_POWER
+                : gamepad1.dpad_down ? Constants.EJECT_POWER : 0;
+        stage2Power = gamepad1.dpad_right ? Constants.INTAKE_POWER
+                : gamepad1.dpad_left ? Constants.EJECT_POWER : 0;
     }
 
     private void pushTelemetry() {

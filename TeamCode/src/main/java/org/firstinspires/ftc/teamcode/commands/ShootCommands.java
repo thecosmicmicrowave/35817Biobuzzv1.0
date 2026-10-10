@@ -25,7 +25,7 @@ public final class ShootCommands {
     public static Command shootAll(Robot robot) {
         return robot.shooter.spinUp()
                 .then(waitForShot(robot))
-                .then(robot.intake.volley().raceWith(Commands.waitMs(Constants.VOLLEY_TIME_MS)))
+                .then(robot.intake.feed().raceWith(Commands.waitMs(Constants.VOLLEY_TIME_MS)))
                 .then(robot.intake.stopFeed())
                 .then(robot.shooter.idleFlywheel());
     }
