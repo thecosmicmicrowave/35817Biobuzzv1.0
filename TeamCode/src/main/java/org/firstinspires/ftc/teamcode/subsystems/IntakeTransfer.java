@@ -72,9 +72,12 @@ public class IntakeTransfer implements Mechanism {
 
     // ---------------------------------------------------------------- commands
 
-    /** Both stages in, gate closed. Artifacts stack on gate. */
+    /** Stage 1 in, stage 2 half speed backwards. Gate closed. */
     public Command intake() {
-        return infinite(() -> runStages(Constants.INTAKE_POWER));
+        return infinite(() -> {
+            stage1.setThrottle(Constants.STAGE1_INTAKE_POWER);
+            stage2.setThrottle(Constants.STAGE2_INTAKE_POWER);
+        });
     }
 
     /** Both stages reverse. Clear jam. */
@@ -168,7 +171,7 @@ public class IntakeTransfer implements Mechanism {
 
     // ---------------------------------------------------------------- hardware
 
-    /** Both stages, same power. Stages always run together. */
+    /** Both stages, same power. */
     private void runStages(double power) {
         stage1.setThrottle(power);
         stage2.setThrottle(power);

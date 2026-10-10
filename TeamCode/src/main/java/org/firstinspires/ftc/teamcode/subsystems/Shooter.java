@@ -11,7 +11,6 @@ import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
 import dev.nextftc.control.filters.Debouncer;
-import dev.nextftc.hardware.actuators.MotorVelocityConstants;
 import dev.nextftc.hardware.actuators.NextMotor;
 import dev.nextftc.hardware.actuators.NextServo;
 import dev.nextftc.robot.Mechanism;
@@ -62,6 +61,13 @@ public class Shooter implements Mechanism {
     /** Ticks-per-rev encoder scaling last built from. */
     private double appliedTicksPerRev = Constants.FLYWHEEL_TICKS_PER_REV;
 
+    /** True: periodic() drive flywheel to targetRpm. False: raw power from test. */
+    private boolean flywheelClosedLoop = true;
+
+    private double flywheelIntegral = 0;
+    private double lastFlywheelError = 0;
+    private long lastFlywheelNanos = 0;
+
     public Shooter(Supplier<Pose> poseSupplier, Supplier<Alliance> allianceSupplier,
                    Supplier<Goal> goalSupplier) {
         this.poseSupplier = poseSupplier;
@@ -86,16 +92,8 @@ public class Shooter implements Mechanism {
         servo.setDirection(reversed ? NextMotor.Direction.REVERSE : NextMotor.Direction.FORWARD);
     }
 
-    /** Copy tunables into motor gains, encoder scaling, debouncer. */
+    /** Copy tunables into encoder scaling + debouncer. */
     private void applyTuning() {
-        MotorVelocityConstants velocity = flywheel.getVelocityConstants();
-        velocity.setKP(Constants.FLYWHEEL_KP);
-        velocity.setKI(Constants.FLYWHEEL_KI);
-        velocity.setKD(Constants.FLYWHEEL_KD);
-        velocity.setKS(Constants.FLYWHEEL_KS);
-        velocity.setKV(Constants.FLYWHEEL_KV);
-        velocity.setKA(Constants.FLYWHEEL_KA);
-
         // Rebuild only on change. No new Angle every loop.
         if (Constants.FLYWHEEL_TICKS_PER_REV != appliedTicksPerRev) {
             flywheel.setAnglePerCount(Units.Rotations.of(1.0 / Constants.FLYWHEEL_TICKS_PER_REV));
@@ -116,6 +114,8 @@ public class Shooter implements Mechanism {
         targetRpm = 0;
         atSpeed = false;
         atSpeedDebouncer.calculate(false);
+        flywheelClosedLoop = true;
+        flywheelIntegral = 0;
         settledTargetDeg = Constants.TURRET_CENTER_DEG;
         applyTurret(Constants.TURRET_CENTER_DEG);
         applyHood(Constants.HOOD_STOWED_POSITION);
@@ -125,6 +125,9 @@ public class Shooter implements Mechanism {
     @Override
     public void periodic() {
         applyTuning();
+        if (flywheelClosedLoop) {
+            flywheel.setThrottle(flywheelPower());
+        }
         atSpeed = atSpeedDebouncer.calculate(withinRpmTolerance());
     }
 
@@ -184,6 +187,7 @@ public class Shooter implements Mechanism {
     public void coastFlywheel() {
         targetRpm = 0;
         armed = false;
+        flywheelClosedLoop = true;
         flywheel.setThrottle(0);
     }
 
@@ -293,6 +297,8 @@ public class Shooter implements Mechanism {
             DoubleSupplier power, DoubleSupplier turretPosition, DoubleSupplier hoodPosition) {
         return infinite(() -> {
             if (power != null) {
+                // Raw power. Speed control off.
+                flywheelClosedLoop = false;
                 flywheel.setThrottle(Constants.clamp(power.getAsDouble(), -1.0, 1.0));
             }
 
@@ -382,9 +388,44 @@ public class Shooter implements Mechanism {
         turretRight.setPosition(position);
     }
 
-    /** Send targetRpm to motor. Safe to call anytime. */
+    /** Speed control on. periodic() drive flywheel to targetRpm. */
     private void applyFlywheel() {
-        flywheel.setVelocitySetpoint(Units.RotationsPerMinute.of(targetRpm));
+        flywheelClosedLoop = true;
+    }
+
+    /** Flywheel power for targetRpm. Far off = bang-bang. Close = PIDF. */
+    private double flywheelPower() {
+        long now = System.nanoTime();
+        // Cap. Slow loop no big jump.
+        double dt = lastFlywheelNanos == 0 ? 0 : Math.min((now - lastFlywheelNanos) / 1e9, 0.1);
+        lastFlywheelNanos = now;
+
+        if (targetRpm <= 0) {
+            flywheelIntegral = 0;
+            lastFlywheelError = 0;
+            return 0;
+        }
+
+        double error = targetRpm - currentRpm();
+
+        // Bang-bang: too slow = full power, too fast = off.
+        if (Math.abs(error) > Constants.FLYWHEEL_BANG_BANG_ERROR_RPM) {
+            flywheelIntegral = 0;
+            lastFlywheelError = error;
+            return error > 0 ? 1.0 : 0.0;
+        }
+
+        // PIDF: hold speed.
+        flywheelIntegral += error * dt;
+        double derivative = dt > 0 ? (error - lastFlywheelError) / dt : 0;
+        lastFlywheelError = error;
+
+        double power = Constants.FLYWHEEL_KS
+                + Constants.FLYWHEEL_KV * targetRpm
+                + Constants.FLYWHEEL_KP * error
+                + Constants.FLYWHEEL_KI * flywheelIntegral
+                + Constants.FLYWHEEL_KD * derivative;
+        return Constants.clamp(power, 0, 1);
     }
 
     private void applyHood(double position) {

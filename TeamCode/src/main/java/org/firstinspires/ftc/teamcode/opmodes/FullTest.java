@@ -3,9 +3,15 @@ package org.firstinspires.ftc.teamcode.opmodes;
 import org.firstinspires.ftc.teamcode.globals.Constants;
 import org.firstinspires.ftc.teamcode.globals.Robot;
 
+import com.pedropathing.drivetrain.DrivePowers;
+import com.pedropathing.drivetrain.Drivetrain;
+import com.pedropathing.follower.ManualDrive;
 import com.pedropathing.ivy.commands.Commands;
 
 import com.bylazar.telemetry.PanelsTelemetry;
+import com.qualcomm.robotcore.hardware.HardwareMap;
+
+import java.util.function.Function;
 
 import dev.nextftc.robot.Telemetry;
 import dev.nextftc.robot.opmode.BulkReadHook;
@@ -34,7 +40,7 @@ public class FullTest extends NextOpMode {
 
     private final Robot robot;
     private final CommandGamepad driver;
-
+    Function<HardwareMap, Drivetrain> drivetrainFunction;
     private double flywheelPower = 0;
     private double turretPosition = Constants.TURRET_CENTER_POSITION;
     private double hoodPosition = Constants.HOOD_STOWED_POSITION;
@@ -80,6 +86,12 @@ public class FullTest extends NextOpMode {
         flywheelPower = Constants.clamp(flywheelPower + delta, -1.0, 1.0);
     }
 
+    private void drive() {
+        Drivetrain drivetrain = drivetrainFunction.apply(hardwareMap);
+        // follower.update() run after this, in Robot.periodic().
+        drivetrain.drive(new DrivePowers(-gamepad2.left_stick_y, -gamepad2.left_stick_x, -gamepad2.right_stick_x), true);
+    }
+
     @Override
     public void start() {
         lastLoopNanos = System.nanoTime();
@@ -104,6 +116,7 @@ public class FullTest extends NextOpMode {
         readSticks();
         readStages();
         pushTelemetry();
+        drive();
     }
 
     /** Left stick X = turret. Right stick Y = hood. */
@@ -131,9 +144,9 @@ public class FullTest extends NextOpMode {
 
     /** Dpad up/down = stage 1 in/out. Dpad right/left = stage 2 in/out. Hold to run. */
     private void readStages() {
-        stage1Power = gamepad1.dpad_up ? Constants.INTAKE_POWER
+        stage1Power = gamepad1.dpad_up ? Constants.FEED_POWER
                 : gamepad1.dpad_down ? Constants.EJECT_POWER : 0;
-        stage2Power = gamepad1.dpad_right ? Constants.INTAKE_POWER
+        stage2Power = gamepad1.dpad_right ? Constants.FEED_POWER
                 : gamepad1.dpad_left ? Constants.EJECT_POWER : 0;
     }
 

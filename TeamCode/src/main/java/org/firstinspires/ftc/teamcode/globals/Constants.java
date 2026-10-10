@@ -129,12 +129,14 @@ public final class Constants {
     public static double FLYWHEEL_TICKS_PER_REV = 28.0;
 
     /** Flywheel velocity gains. */
-    public static double FLYWHEEL_KP = 0.0;
+    public static double FLYWHEEL_KP = 0.002;
     public static double FLYWHEEL_KI = 0.0;
     public static double FLYWHEEL_KD = 0.0;
     public static double FLYWHEEL_KS = 0.0;
     public static double FLYWHEEL_KV = 1.0 / 6000.0;
-    public static double FLYWHEEL_KA = 0.0;
+
+    /** RPM error bigger than this = bang-bang (full power or off). Smaller = PIDF. */
+    public static double FLYWHEEL_BANG_BANG_ERROR_RPM = 300;
 
     /** Idle speed between shots. */
     public static double IDLE_RPM = 1000;
@@ -157,10 +159,18 @@ public final class Constants {
 
     // ---------------------------------------------------------------- intake powers
 
-    // Stage 1 + stage 2 always run together, same power.
-    public static double INTAKE_POWER = 1.0;
-    public static double EJECT_POWER = -1.0;
-    public static double FEED_POWER = 1.0;
+    // Negative = toward shooter on this robot.
+    /** Intaking: stage 1 pull in. */
+    public static double STAGE1_INTAKE_POWER = -1.0;
+
+    /** Intaking: stage 2 half speed backwards. */
+    public static double STAGE2_INTAKE_POWER = 0.5;
+
+    /** Feeding: both stages toward shooter. */
+    public static double FEED_POWER = -1.0;
+
+    /** Eject: both stages away from shooter. */
+    public static double EJECT_POWER = 1.0;
 
     // ---------------------------------------------------------------- timing
 
