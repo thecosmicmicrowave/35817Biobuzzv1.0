@@ -19,11 +19,14 @@ import dev.nextftc.robot.NextRobot;
 public class Robot implements NextRobot {
 
     public final IntakeTransfer intake = new IntakeTransfer();
-    public final Shooter shooter = new Shooter(this::pose, this::alliance);
+    public final Shooter shooter = new Shooter(this::pose, this::alliance, this::goal);
 
     private Follower follower;
 
     private Alliance alliance = Alliance.BLUE;
+
+    /** HIVE goal shooter aim at now. */
+    private Goal goal = Goal.A;
 
     /** Latest pose. */
     private Pose lastPose = Constants.DEFAULT_START_POSE;
@@ -47,6 +50,7 @@ public class Robot implements NextRobot {
     /** Start auto: set alliance, start follower, mark handoff. False = no follower. */
     public boolean beginAuto(HardwareMap hardwareMap, Alliance alliance, Pose startPose) {
         this.alliance = alliance;
+        this.goal = Goal.A;
         initFollower(hardwareMap, startPose);
         lastPose = startPose;
         autoHandoffPending = follower != null;
@@ -102,6 +106,19 @@ public class Robot implements NextRobot {
 
     public void setAlliance(Alliance alliance) {
         this.alliance = alliance;
+    }
+
+    public Goal goal() {
+        return goal;
+    }
+
+    public void setGoal(Goal goal) {
+        this.goal = goal;
+    }
+
+    /** Switch to other goal. */
+    public void toggleGoal() {
+        goal = goal.other();
     }
 
     /** Robot pose now. Default if no follower. */

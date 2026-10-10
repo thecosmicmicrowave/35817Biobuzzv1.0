@@ -5,6 +5,7 @@ import com.pedropathing.math.Pose;
 
 import org.firstinspires.ftc.teamcode.globals.Alliance;
 import org.firstinspires.ftc.teamcode.globals.Constants;
+import org.firstinspires.ftc.teamcode.globals.Goal;
 
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
@@ -29,6 +30,7 @@ public class Shooter implements Mechanism {
 
     private final Supplier<Pose> poseSupplier;
     private final Supplier<Alliance> allianceSupplier;
+    private final Supplier<Goal> goalSupplier;
 
     private final Debouncer atSpeedDebouncer =
             new Debouncer(Constants.AT_SPEED_DEBOUNCE_SECONDS, Debouncer.DebounceType.RISING);
@@ -60,9 +62,11 @@ public class Shooter implements Mechanism {
     /** Ticks-per-rev encoder scaling last built from. */
     private double appliedTicksPerRev = Constants.FLYWHEEL_TICKS_PER_REV;
 
-    public Shooter(Supplier<Pose> poseSupplier, Supplier<Alliance> allianceSupplier) {
+    public Shooter(Supplier<Pose> poseSupplier, Supplier<Alliance> allianceSupplier,
+                   Supplier<Goal> goalSupplier) {
         this.poseSupplier = poseSupplier;
         this.allianceSupplier = allianceSupplier;
+        this.goalSupplier = goalSupplier;
         bindServos();
         applyTuning();
     }
@@ -134,8 +138,9 @@ public class Shooter implements Mechanism {
     public double distanceToGoal() {
         Pose pose = poseSupplier.get();
         Alliance alliance = allianceSupplier.get();
-        double dx = Constants.goalX(alliance) - pose.x();
-        double dy = Constants.goalY(alliance) - pose.y();
+        Goal goal = goalSupplier.get();
+        double dx = Constants.goalX(alliance, goal) - pose.x();
+        double dy = Constants.goalY(alliance, goal) - pose.y();
         return Math.hypot(dx, dy);
     }
 
@@ -143,8 +148,9 @@ public class Shooter implements Mechanism {
     public double bearingToGoal() {
         Pose pose = poseSupplier.get();
         Alliance alliance = allianceSupplier.get();
-        double dx = Constants.goalX(alliance) - pose.x();
-        double dy = Constants.goalY(alliance) - pose.y();
+        Goal goal = goalSupplier.get();
+        double dx = Constants.goalX(alliance, goal) - pose.x();
+        double dy = Constants.goalY(alliance, goal) - pose.y();
         double fieldBearingDeg = Math.toDegrees(Math.atan2(dy, dx));
         return Constants.normalizeDeg(fieldBearingDeg - Math.toDegrees(pose.heading()));
     }

@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.opmodes;
 import org.firstinspires.ftc.teamcode.commands.ShootCommands;
 import org.firstinspires.ftc.teamcode.globals.Alliance;
 import org.firstinspires.ftc.teamcode.globals.Constants;
+import org.firstinspires.ftc.teamcode.globals.Goal;
 import org.firstinspires.ftc.teamcode.globals.Robot;
 
 import com.pedropathing.drivetrain.DrivePowers;
@@ -38,6 +39,9 @@ public class MainTeleOp extends NextOpMode {
         // After auto: same alliance, start where auto end.
         // Else default pose, pick alliance in init.
         fromAuto = robot.hasAutoHandoff();
+        if (!fromAuto) {
+            robot.setGoal(Goal.A);
+        }
         robot.initFollower(hardwareMap, robot.takeHandoffPose());
         robot.reset();
 
@@ -53,6 +57,9 @@ public class MainTeleOp extends NextOpMode {
         driver.rightBumper().whileTrue(robot.intake.eject());
 
         driver.a().onTrue(robot.intake.toggleFlower());
+
+        // HIVE tipped: aim at other goal.
+        driver.b().onTrue(Commands.instant(robot::toggleGoal));
 
         // Not toggleOnTrue: spinUp() instant, nothing to cancel.
         driver.x().onTrue(Commands.conditional(
@@ -114,6 +121,7 @@ public class MainTeleOp extends NextOpMode {
 
     private void pushTelemetry() {
         Telemetry.log("alliance", robot.alliance());
+        Telemetry.log("goal (B to switch)", robot.goal());
         Telemetry.log("distance to goal", robot.shooter.distanceToGoal());
         Telemetry.log("turret (deg)", robot.shooter.commandedTurretDeg());
         Telemetry.log("hood", robot.shooter.commandedHoodPosition());

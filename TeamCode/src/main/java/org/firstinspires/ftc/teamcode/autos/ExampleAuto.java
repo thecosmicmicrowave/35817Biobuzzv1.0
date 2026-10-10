@@ -66,6 +66,7 @@ public abstract class ExampleAuto extends NextOpMode {
 
     private void pushTelemetry() {
         Telemetry.log("alliance", alliance);
+        Telemetry.log("goal", robot.goal());
         if (!ready) {
             Telemetry.log("NOT READY", "follower unavailable — implement pedro/Constants.create()");
             return;

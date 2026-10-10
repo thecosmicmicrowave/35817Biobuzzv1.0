@@ -20,9 +20,13 @@ public final class Constants {
     /** Field size, inches. Pedro field 0..144 both axes. */
     public static final double FIELD_SIZE_IN = 144;
 
-    /** Goal spot, inches, BLUE alliance. Use goalX()/goalY(), they mirror for red. */
-    public static double GOAL_X = 72;
-    public static double GOAL_Y = 144;
+    /** Goal A spot, inches, BLUE alliance. Use goalX()/goalY(), they mirror for red. */
+    public static double GOAL_A_X = 72;
+    public static double GOAL_A_Y = 144;
+
+    /** Goal B spot, inches, BLUE alliance. */
+    public static double GOAL_B_X = 60;
+    public static double GOAL_B_Y = 144;
 
     /** Start pose when OpMode give none. */
     public static final Pose DEFAULT_START_POSE = new Pose(0, 0, 0);
@@ -197,14 +201,15 @@ public final class Constants {
 
     // ---------------------------------------------------------------- helpers
 
-    /** Goal x for alliance. */
-    public static double goalX(Alliance alliance) {
-        return alliance == Alliance.RED ? FIELD_SIZE_IN - GOAL_X : GOAL_X;
+    /** Goal x for alliance + goal. */
+    public static double goalX(Alliance alliance, Goal goal) {
+        double blueX = goal == Goal.B ? GOAL_B_X : GOAL_A_X;
+        return alliance == Alliance.RED ? FIELD_SIZE_IN - blueX : blueX;
     }
 
-    /** Goal y for alliance. */
-    public static double goalY(Alliance alliance) {
-        return GOAL_Y;
+    /** Goal y for alliance + goal. */
+    public static double goalY(Alliance alliance, Goal goal) {
+        return goal == Goal.B ? GOAL_B_Y : GOAL_A_Y;
     }
 
     public static double clamp(double value, double min, double max) {

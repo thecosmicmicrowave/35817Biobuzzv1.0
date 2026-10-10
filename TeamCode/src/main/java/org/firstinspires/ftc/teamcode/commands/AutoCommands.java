@@ -5,14 +5,21 @@ import static com.pedropathing.ivy.pedro.PedroCommands.follow;
 import static com.pedropathing.ivy.pedro.PedroCommands.hold;
 
 import com.pedropathing.ivy.Command;
+import com.pedropathing.ivy.commands.Commands;
 import com.pedropathing.paths.Path;
 
+import org.firstinspires.ftc.teamcode.globals.Goal;
 import org.firstinspires.ftc.teamcode.globals.Robot;
 
 /** Auto drive steps. */
 public final class AutoCommands {
 
     private AutoCommands() {
+    }
+
+    /** Aim at this goal from now on. Use after HIVE tip. */
+    public static Command switchGoal(Robot robot, Goal goal) {
+        return Commands.instant(() -> robot.setGoal(goal));
     }
 
     /** Drive to shoot spot. Spin flywheel + aim while driving. Hold end pose. */
