@@ -242,6 +242,11 @@ public class Shooter implements Mechanism {
         applyFlywheel();
     }
 
+    /** Arm, no command. Flywheel hold table RPM from next aim loop. */
+    public void arm() {
+        armed = true;
+    }
+
     /** Arm. Spin to table RPM for current distance. */
     public Command spinUp() {
         return instant(() -> {

@@ -30,6 +30,11 @@ public final class ShootCommands {
                 .then(robot.shooter.idleFlywheel());
     }
 
+    /** Hold to shoot. Wait flywheel ready, then feed till released. Shooter keep aiming. */
+    public static Command shootWhileHeld(Robot robot) {
+        return waitForShot(robot).then(robot.intake.feed());
+    }
+
     /** Shoot with fixed settings, no pose. Auto or pit test. */
     public static Command shootFrom(Robot robot, double rpm, double hoodPosition, double turretDeg) {
         return robot.shooter.spinUpTo(rpm)

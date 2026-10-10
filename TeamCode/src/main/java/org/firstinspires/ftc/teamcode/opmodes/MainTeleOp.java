@@ -44,14 +44,18 @@ public class MainTeleOp extends NextOpMode {
         }
         robot.initFollower(hardwareMap, robot.takeHandoffPose());
         robot.reset();
+        // Flywheel stay at shoot speed whole match. Shot instant.
+        robot.shooter.arm();
 
         driver = new CommandGamepad(gamepad1);
         bindControls();
     }
 
     private void bindControls() {
-        driver.rightTrigger().isOver(0.5).onTrue(ShootCommands.shootOne(robot));
-        driver.y().onTrue(ShootCommands.shootAll(robot));
+        // Hold = feed all balls. Release = gate closed, stages off.
+        driver.rightTrigger().isOver(0.5)
+                .whileTrue(ShootCommands.shootWhileHeld(robot))
+                .onFalse(robot.intake.stopFeed());
 
         driver.leftBumper().whileTrue(robot.intake.intake());
         driver.rightBumper().whileTrue(robot.intake.eject());
@@ -109,8 +113,8 @@ public class MainTeleOp extends NextOpMode {
         // follower.update() run after this, in Robot.periodic().
         DrivePowers powers = ManualDrive.fieldCentric(
                 -gamepad1.left_stick_y,
-                gamepad1.left_stick_x,
-                gamepad1.right_stick_x,
+                -gamepad1.left_stick_x,
+                -gamepad1.right_stick_x,
                 robot.follower().pose().heading()
         );
 
