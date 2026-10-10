@@ -7,7 +7,6 @@ import com.pedropathing.ivy.Command;
 import com.pedropathing.math.Pose;
 
 import org.firstinspires.ftc.teamcode.commands.AutoCommands;
-import org.firstinspires.ftc.teamcode.commands.ShootCommands;
 import org.firstinspires.ftc.teamcode.globals.Alliance;
 import org.firstinspires.ftc.teamcode.globals.Robot;
 
@@ -15,17 +14,17 @@ import dev.nextftc.robot.Telemetry;
 import dev.nextftc.robot.opmode.BulkReadHook;
 import dev.nextftc.robot.opmode.NextOpMode;
 
-/** Example auto. Drive to shoot spot, shoot all. */
-public abstract class ExampleAuto extends NextOpMode {
+/** Main auto. Routine for both alliances. */
+public abstract class MainAuto extends NextOpMode {
 
     private final Robot robot;
     private final Alliance alliance;
-    private final ExampleRoute route;
+    private final AutoRoute route;
 
     /** False = no follower. Nothing scheduled. */
     private final boolean ready;
 
-    protected ExampleAuto(Robot robot, Alliance alliance, ExampleRoute route) {
+    protected MainAuto(Robot robot, Alliance alliance, AutoRoute route) {
         super(robot, BulkReadHook.INSTANCE);
         this.robot = robot;
         this.alliance = alliance;
@@ -34,17 +33,23 @@ public abstract class ExampleAuto extends NextOpMode {
         Telemetry.addBackend(PanelsTelemetry.INSTANCE.getFtcTelemetry());
 
         robot.bindHardware();
-        // Start pose = first path start, heading too.
-        Pose startPose = route.driveToShoot().get(0);
-        ready = robot.beginAuto(hardwareMap, alliance, startPose);
+        // Export "start" pose, not path1 start: headings differ.
+        ready = robot.beginAuto(hardwareMap, alliance, StartPose.of(route));
         robot.reset();
     }
 
-    /** Auto routine. */
+    /** Auto routine. Add actions between drives. */
     private Command routine() {
         return sequential(
-                AutoCommands.driveAiming(robot, route.driveToShoot()),
-                ShootCommands.shootAll(robot));
+                AutoCommands.drive(robot, route.path1()),
+
+                AutoCommands.drive(robot, route.path2()),
+
+                AutoCommands.drive(robot, route.path3()),
+
+                AutoCommands.drive(robot, route.path4()),
+
+                AutoCommands.drive(robot, route.path5()));
     }
 
     @Override

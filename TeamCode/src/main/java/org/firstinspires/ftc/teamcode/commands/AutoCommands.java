@@ -22,6 +22,13 @@ public final class AutoCommands {
         return Commands.instant(() -> robot.setGoal(goal));
     }
 
+    /** Drive path. Hold end pose. */
+    public static Command drive(Robot robot, Path path) {
+        return follow(robot.follower(), path)
+                // endPose, not hold(follower): that one grab start pose.
+                .then(hold(robot.follower(), path.endPose()));
+    }
+
     /** Drive to shoot spot. Spin flywheel + aim while driving. Hold end pose. */
     public static Command driveAiming(Robot robot, Path path) {
         return robot.shooter.spinUp()
