@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.globals;
 
+import com.pedropathing.drivetrain.DrivePowers;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.math.Pose;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -67,6 +68,13 @@ public class Robot implements NextRobot {
         Pose pose = autoHandoffPending ? lastPose : Constants.DEFAULT_START_POSE;
         autoHandoffPending = false;
         return pose;
+    }
+
+    /** Robot-centric drive. No follower = nothing. */
+    public void driveRobotCentric(double forward, double strafe, double turn) {
+        if (follower != null) {
+            follower.manual(new DrivePowers(forward, strafe, turn));
+        }
     }
 
     /** Fresh servos. Call first every OpMode. */

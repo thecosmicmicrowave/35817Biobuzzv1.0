@@ -3,15 +3,9 @@ package org.firstinspires.ftc.teamcode.opmodes;
 import org.firstinspires.ftc.teamcode.globals.Constants;
 import org.firstinspires.ftc.teamcode.globals.Robot;
 
-import com.pedropathing.drivetrain.DrivePowers;
-import com.pedropathing.drivetrain.Drivetrain;
-import com.pedropathing.follower.ManualDrive;
 import com.pedropathing.ivy.commands.Commands;
 
 import com.bylazar.telemetry.PanelsTelemetry;
-import com.qualcomm.robotcore.hardware.HardwareMap;
-
-import java.util.function.Function;
 
 import dev.nextftc.robot.Telemetry;
 import dev.nextftc.robot.opmode.BulkReadHook;
@@ -19,7 +13,7 @@ import dev.nextftc.robot.opmode.NextOpMode;
 import dev.nextftc.robot.opmode.NextTeleop;
 import dev.nextftc.robot.triggers.CommandGamepad;
 
-/** Full test. Raw control of everything but drivetrain. */
+/** Full test. Raw control of everything. */
 @NextTeleop(name = "Full Test", group = "test")
 public class FullTest extends NextOpMode {
 
@@ -40,7 +34,6 @@ public class FullTest extends NextOpMode {
 
     private final Robot robot;
     private final CommandGamepad driver;
-    Function<HardwareMap, Drivetrain> drivetrainFunction;
     private double flywheelPower = 0;
     private double turretPosition = Constants.TURRET_CENTER_POSITION;
     private double hoodPosition = Constants.HOOD_STOWED_POSITION;
@@ -58,6 +51,8 @@ public class FullTest extends NextOpMode {
 
         Telemetry.addBackend(PanelsTelemetry.INSTANCE.getFtcTelemetry());
         robot.bindHardware();
+        // Drive on gamepad 2. Start pose default.
+        robot.initFollower(hardwareMap, Constants.DEFAULT_START_POSE);
 
         driver = new CommandGamepad(gamepad1);
         bindControls();
@@ -87,9 +82,8 @@ public class FullTest extends NextOpMode {
     }
 
     private void drive() {
-        Drivetrain drivetrain = drivetrainFunction.apply(hardwareMap);
-        // follower.update() run after this, in Robot.periodic().
-        drivetrain.drive(new DrivePowers(-gamepad2.left_stick_y, -gamepad2.left_stick_x, -gamepad2.right_stick_x), true);
+        // Gamepad 2 drive. SDK Y negative when up.
+        robot.driveRobotCentric(-gamepad2.left_stick_y, -gamepad2.left_stick_x, -gamepad2.right_stick_x);
     }
 
     @Override
@@ -151,6 +145,7 @@ public class FullTest extends NextOpMode {
     }
 
     private void pushTelemetry() {
+        Telemetry.log("drive:    gamepad 2");
         Telemetry.log("flywheel: triggers step power, B stop");
         Telemetry.log("turret:   left stick X");
         Telemetry.log("hood:     right stick Y");

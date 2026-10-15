@@ -25,6 +25,8 @@ public class TransferTest extends NextOpMode {
 
         Telemetry.addBackend(PanelsTelemetry.INSTANCE.getFtcTelemetry());
         robot.bindHardware();
+        // Drive on gamepad 2. Start pose default.
+        robot.initFollower(hardwareMap, Constants.DEFAULT_START_POSE);
     }
 
     @Override
@@ -37,10 +39,13 @@ public class TransferTest extends NextOpMode {
 
     @Override
     public void periodic() {
+        // Gamepad 2 drive. SDK Y negative when up.
+        robot.driveRobotCentric(-gamepad2.left_stick_y, -gamepad2.left_stick_x, -gamepad2.right_stick_x);
         // Stick up = forward. SDK Y negative when up.
         stage1Power = stick(-gamepad1.left_stick_y);
         stage2Power = stick(-gamepad1.right_stick_y);
 
+        Telemetry.log("drive: gamepad 2");
         Telemetry.log("stage 1: left stick Y");
         Telemetry.log("stage 2: right stick Y");
         Telemetry.log("");

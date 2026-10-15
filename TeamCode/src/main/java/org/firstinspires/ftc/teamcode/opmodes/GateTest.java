@@ -31,6 +31,8 @@ public class GateTest extends NextOpMode {
 
         Telemetry.addBackend(PanelsTelemetry.INSTANCE.getFtcTelemetry());
         robot.bindHardware();
+        // Drive on gamepad 2. Start pose default.
+        robot.initFollower(hardwareMap, Constants.DEFAULT_START_POSE);
 
         driver = new CommandGamepad(gamepad1);
         bindControls();
@@ -66,6 +68,9 @@ public class GateTest extends NextOpMode {
 
     @Override
     public void periodic() {
+        // Gamepad 2 drive. SDK Y negative when up.
+        robot.driveRobotCentric(-gamepad2.left_stick_y, -gamepad2.left_stick_x, -gamepad2.right_stick_x);
+        Telemetry.log("drive: gamepad 2");
         Telemetry.log("move:  dpad U/D fine, bumpers coarse");
         Telemetry.log("jump:  A = open, B = closed");
         Telemetry.log("save:  X = open, Y = closed");

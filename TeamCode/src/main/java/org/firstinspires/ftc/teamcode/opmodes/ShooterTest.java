@@ -44,6 +44,8 @@ public class ShooterTest extends NextOpMode {
 
         // Re-apply servo range + direction. SDK reset them each OpMode.
         robot.bindHardware();
+        // Drive on gamepad 2. Start pose default.
+        robot.initFollower(hardwareMap, Constants.DEFAULT_START_POSE);
 
         driver = new CommandGamepad(gamepad1);
         bindControls();
@@ -127,8 +129,11 @@ public class ShooterTest extends NextOpMode {
 
     @Override
     public void periodic() {
+        // Gamepad 2 drive. SDK Y negative when up.
+        robot.driveRobotCentric(-gamepad2.left_stick_y, -gamepad2.left_stick_x, -gamepad2.right_stick_x);
         driveFromSticks();
 
+        Telemetry.log("drive: gamepad 2");
         Telemetry.log("flywheel: triggers step power, B stops");
         Telemetry.log("turret:   left stick X, dpad L/R fine, bumpers coarse");
         Telemetry.log("hood:     right stick Y, dpad U/D fine, Y/A coarse");
