@@ -121,6 +121,18 @@ public class Robot implements NextRobot {
         goal = goal.other();
     }
 
+    /** Pick goal on same side as robot. Line = halfway between goals in y. */
+    public void pickGoalBySide() {
+        double y = pose().y();
+        double half = (Constants.GOAL_A_Y + Constants.GOAL_B_Y) / 2;
+        boolean aAbove = Constants.GOAL_A_Y > Constants.GOAL_B_Y;
+        if (y > half + Constants.GOAL_SWITCH_DEADBAND_IN) {
+            goal = aAbove ? Goal.A : Goal.B;
+        } else if (y < half - Constants.GOAL_SWITCH_DEADBAND_IN) {
+            goal = aAbove ? Goal.B : Goal.A;
+        }
+    }
+
     /** Robot pose now. Default if no follower. */
     public Pose pose() {
         return follower == null ? Constants.DEFAULT_START_POSE : follower.pose();

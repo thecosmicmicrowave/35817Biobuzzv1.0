@@ -28,6 +28,9 @@ public final class Constants {
     public static double GOAL_B_X = 83.7;
     public static double GOAL_B_Y = 54.5;
 
+    /** Teleop goal pick: robot must pass halfway line by this much to switch. Stop flicker. */
+    public static double GOAL_SWITCH_DEADBAND_IN = 2.0;
+
     /** Start pose when OpMode give none. */
     public static final Pose DEFAULT_START_POSE = new Pose(0, 0, 0);
 

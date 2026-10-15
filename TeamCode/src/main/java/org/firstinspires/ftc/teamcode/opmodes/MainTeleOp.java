@@ -9,6 +9,7 @@ import org.firstinspires.ftc.teamcode.globals.Robot;
 import com.pedropathing.drivetrain.DrivePowers;
 import com.pedropathing.follower.ManualDrive;
 import com.pedropathing.ivy.commands.Commands;
+import com.pedropathing.math.Pose;
 
 import com.bylazar.telemetry.PanelsTelemetry;
 
@@ -62,9 +63,6 @@ public class MainTeleOp extends NextOpMode {
 
         driver.a().onTrue(robot.intake.toggleFlower());
 
-        // HIVE tipped: aim at other goal.
-        driver.b().onTrue(Commands.instant(robot::toggleGoal));
-
         // Not toggleOnTrue: spinUp() instant, nothing to cancel.
         driver.x().onTrue(Commands.conditional(
                 robot.shooter::isArmed,
@@ -102,6 +100,7 @@ public class MainTeleOp extends NextOpMode {
     @Override
     public void periodic() {
         drive();
+        robot.pickGoalBySide();
         pushTelemetry();
     }
 
@@ -125,8 +124,14 @@ public class MainTeleOp extends NextOpMode {
 
     private void pushTelemetry() {
         Telemetry.log("alliance", robot.alliance());
-        Telemetry.log("goal (B to switch)", robot.goal());
-        Telemetry.log("distance to goal", robot.shooter.distanceToGoal());
+        Pose pose = robot.pose();
+        Telemetry.log("x", String.format("%.1f", pose.x()));
+        Telemetry.log("y", String.format("%.1f", pose.y()));
+        Telemetry.log("heading (deg)", String.format("%.1f", Math.toDegrees(pose.heading())));
+        Telemetry.log("goal", robot.goal() + " at (" + Constants.goalX(robot.alliance(), robot.goal())
+                + ", " + Constants.goalY(robot.alliance(), robot.goal()) + ")");
+        Telemetry.log("distance to goal", String.format("%.1f", robot.shooter.distanceToGoal()));
+        Telemetry.log("bearing to goal (deg)", String.format("%.1f", robot.shooter.bearingToGoal()));
         Telemetry.log("turret (deg)", robot.shooter.commandedTurretDeg());
         Telemetry.log("hood", robot.shooter.commandedHoodPosition());
         Telemetry.log("flywheel target / actual", robot.shooter.targetRpm() + " / " + robot.shooter.currentRpm());
