@@ -32,7 +32,7 @@ public final class Constants {
     public static double GOAL_SWITCH_DEADBAND_IN = 2.0;
 
     /** Start pose when OpMode give none. */
-    public static final Pose DEFAULT_START_POSE = new Pose(0, 0, 0);
+    public static final Pose DEFAULT_START_POSE = new Pose(72, 72, 0);
 
     // ---------------------------------------------------------------- turret geometry
     //
