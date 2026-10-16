@@ -94,6 +94,7 @@ public class Robot implements NextRobot {
         if (follower != null) {
             follower.update();
             lastPose = follower.pose();
+            Drawing.drawRobot(lastPose);
         }
     }
 
