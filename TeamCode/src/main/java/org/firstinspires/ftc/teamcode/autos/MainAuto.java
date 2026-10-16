@@ -4,10 +4,13 @@ import static com.pedropathing.ivy.groups.Groups.sequential;
 
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.pedropathing.ivy.Command;
+import com.pedropathing.ivy.commands.Commands;
 import com.pedropathing.math.Pose;
 
 import org.firstinspires.ftc.teamcode.commands.AutoCommands;
+import org.firstinspires.ftc.teamcode.commands.ShootCommands;
 import org.firstinspires.ftc.teamcode.globals.Alliance;
+import org.firstinspires.ftc.teamcode.globals.Constants;
 import org.firstinspires.ftc.teamcode.globals.Robot;
 
 import dev.nextftc.robot.Telemetry;
@@ -36,19 +39,25 @@ public abstract class MainAuto extends NextOpMode {
         // Start pose = export "start" pose.
         ready = robot.beginAuto(hardwareMap, alliance, StartPose.of(route));
         robot.reset();
+        robot.shooter.aim();
     }
 
     /** Auto routine. Add actions between drives. */
     private Command routine() {
         return sequential(
-                AutoCommands.drive(robot, route.path1()),
-
-                AutoCommands.drive(robot, route.path2()),
-
-                AutoCommands.drive(robot, route.path3()),
-
-                AutoCommands.drive(robot, route.path4()),
-
+                ShootCommands.shootAll(robot),
+                AutoCommands.driveIntaking(robot, route.path1()),
+                AutoCommands.driveAiming(robot, route.path2()),
+                ShootCommands.shootAll(robot),
+                robot.intake.deployFlower(),
+                AutoCommands.driveIntaking(robot, route.path3()),
+                robot.intake.intake(),
+                robot.shooter.aim(),
+                Commands.waitMs(500),
+                ShootCommands.shootAll(robot),
+                AutoCommands.driveIntaking(robot, route.path4()),
+                robot.intake.intake(),
+                Commands.waitMs(500),
                 AutoCommands.drive(robot, route.path5()));
     }
 

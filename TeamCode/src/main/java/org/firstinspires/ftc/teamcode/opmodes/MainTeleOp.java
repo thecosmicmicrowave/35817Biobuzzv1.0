@@ -111,8 +111,8 @@ public class MainTeleOp extends NextOpMode {
 
         // follower.update() run after this, in Robot.periodic().
         DrivePowers powers = ManualDrive.fieldCentric(
-                -gamepad1.left_stick_y,
-                -gamepad1.left_stick_x,
+                gamepad1.left_stick_y,
+                gamepad1.left_stick_x,
                 -gamepad1.right_stick_x,
                 robot.follower().pose().heading()
         );

@@ -208,11 +208,11 @@ public final class Constants {
 
     static {
         // Placeholders. Replace when tuning.
-        DISTANCE_TO_RPM.put(24.0, 2000.0);
+        DISTANCE_TO_RPM.put(24.0, 3000.0);
         DISTANCE_TO_RPM.put(120.0, 3500.0);
 
-        DISTANCE_TO_HOOD.put(24.0, 0.2);
-        DISTANCE_TO_HOOD.put(120.0, 0.8);
+        DISTANCE_TO_HOOD.put(24.0, 0.05);
+        DISTANCE_TO_HOOD.put(120.0, 0.45);
     }
 
     // ---------------------------------------------------------------- helpers
