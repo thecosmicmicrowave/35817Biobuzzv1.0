@@ -20,13 +20,9 @@ public final class Constants {
     /** Field size, inches. Pedro field 0..144 both axes. */
     public static final double FIELD_SIZE_IN = 144;
 
-    /** Goal A spot, inches, BLUE alliance. Use goalX()/goalY(), they mirror for red. */
-    public static double GOAL_A_X = 83.7;
-    public static double GOAL_A_Y = 82.5;
-
-    /** Goal B spot, inches, BLUE alliance. */
-    public static double GOAL_B_X = 83.7;
-    public static double GOAL_B_Y = 54.5;
+    /** Goal A spot, inches, BLUE alliance. B = A mirrored across y = 72. Red = mirrored across x = 72. */
+    public static double GOAL_A_X = 84.3;
+    public static double GOAL_A_Y = 82.2;
 
     /** Teleop goal pick: robot must pass halfway line by this much to switch. Stop flicker. */
     public static double GOAL_SWITCH_DEADBAND_IN = 2.0;
@@ -223,13 +219,12 @@ public final class Constants {
 
     /** Goal x for alliance + goal. */
     public static double goalX(Alliance alliance, Goal goal) {
-        double blueX = goal == Goal.B ? GOAL_B_X : GOAL_A_X;
-        return alliance == Alliance.RED ? FIELD_SIZE_IN - blueX : blueX;
+        return alliance == Alliance.RED ? FIELD_SIZE_IN - GOAL_A_X : GOAL_A_X;
     }
 
     /** Goal y for alliance + goal. */
     public static double goalY(Alliance alliance, Goal goal) {
-        return goal == Goal.B ? GOAL_B_Y : GOAL_A_Y;
+        return goal == Goal.B ? FIELD_SIZE_IN - GOAL_A_Y : GOAL_A_Y;
     }
 
     public static double clamp(double value, double min, double max) {
