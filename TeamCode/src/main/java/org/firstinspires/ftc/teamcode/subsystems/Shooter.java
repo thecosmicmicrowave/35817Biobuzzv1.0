@@ -246,6 +246,19 @@ public class Shooter implements Mechanism {
         applyFlywheel();
     }
 
+    /** Shot tuning. Turret aim at goal. RPM + hood from suppliers, not tables. */
+    public Command tuneShot(DoubleSupplier rpm, DoubleSupplier hoodPosition) {
+        return infinite(() -> {
+            applyTurret(Constants.clamp(bearingToGoal(),
+                    Constants.turretMinDeg(), Constants.turretMaxDeg()));
+            applyHood(Constants.clamp(hoodPosition.getAsDouble(),
+                    Constants.HOOD_MIN_POSITION, Constants.HOOD_MAX_POSITION));
+            armed = false;
+            targetRpm = Math.max(0, rpm.getAsDouble());
+            applyFlywheel();
+        });
+    }
+
     /** Arm, no command. Flywheel hold table RPM from next aim loop. */
     public void arm() {
         armed = true;
