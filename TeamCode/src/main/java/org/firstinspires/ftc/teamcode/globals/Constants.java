@@ -208,6 +208,29 @@ public final class Constants {
     //
     // Drive motors set in pedro/Constants.java.
 
+    // ---------------------------------------------------------------- shoot on the move
+
+    /** True = lead goal when robot moving. */
+    public static boolean SHOOT_ON_MOVE = true;
+
+    /** Time from aim to ball leaving shooter, seconds. Robot keep moving this long. */
+    public static double SOTM_LATENCY_S = 0.1;
+
+    /** Flywheel wheel diameter, inches. 72mm Rhino wheel, from CAD. */
+    public static final double FLYWHEEL_DIAMETER_IN = 72 / 25.4;
+
+    /** Ball exit speed / flywheel surface speed. Ball roll on hood = about half. */
+    public static double BALL_EXIT_EFFICIENCY = 0.5;
+
+    /** Ball leave shooter this high off floor, inches. Flywheel center, from CAD. */
+    public static double LAUNCH_HEIGHT_IN = 12.3;
+
+    /** Goal opening height off floor, inches. MEASURE. */
+    public static double GOAL_HEIGHT_IN = 40.0;
+
+    /** Gravity, inches per second squared. */
+    public static final double GRAVITY_IN_PER_S2 = 386.09;
+
     // ---------------------------------------------------------------- lookup tables
 
     /** Blend between two table entries. */

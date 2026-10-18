@@ -177,7 +177,7 @@ public class Shooter implements Mechanism {
             double aimX = goalX;
             double aimY = goalY;
             for (int i = 0; i < 3; i++) {
-                double flightS = Math.hypot(aimX - x, aimY - y) / Constants.SOTM_BALL_SPEED_IN_PER_S;
+                double flightS = flightTimeS(Math.hypot(aimX - x, aimY - y));
                 aimX = goalX - velocity.vx * flightS;
                 aimY = goalY - velocity.vy * flightS;
             }
@@ -480,6 +480,29 @@ public class Shooter implements Mechanism {
             return false;
         }
         return Math.abs(currentRpm() - targetRpm) <= Constants.RPM_TOLERANCE;
+    }
+
+    /**
+     * Ball flight time to goal, seconds. Physics from table RPM.
+     * Exit speed = flywheel surface speed x efficiency.
+     * Launch angle = low arc that hit goal height at this distance.
+     */
+    public static double flightTimeS(double distanceIn) {
+        double rpm = lookUp(Constants.DISTANCE_TO_RPM, distanceIn, 0);
+        double speed = Constants.BALL_EXIT_EFFICIENCY
+                * Math.PI * Constants.FLYWHEEL_DIAMETER_IN * rpm / 60.0;
+        if (speed <= 0 || distanceIn <= 0) {
+            return 0;
+        }
+        double g = Constants.GRAVITY_IN_PER_S2;
+        double rise = Constants.GOAL_HEIGHT_IN - Constants.LAUNCH_HEIGHT_IN;
+        double v2 = speed * speed;
+        double root = v2 * v2 - g * (g * distanceIn * distanceIn + 2 * rise * v2);
+        // Too slow to reach by physics. Estimate wrong, guess 45 deg.
+        double angle = root < 0
+                ? Math.PI / 4
+                : Math.atan((v2 - Math.sqrt(root)) / (g * distanceIn));
+        return distanceIn / (speed * Math.cos(angle));
     }
 
     /** Read table. Key clamped to table range. Empty table = fallback. */
