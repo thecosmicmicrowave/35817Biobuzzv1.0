@@ -30,12 +30,12 @@ public final class Constants {
     /** Robot center to left edge, inches. From CAD. */
     public static final double ROBOT_CENTER_TO_LEFT_IN = 7.22;
 
-    /** Robot center to front (intake) edge, flower stowed, inches. From CAD. */
-    public static final double ROBOT_CENTER_TO_FRONT_IN = 10.32;
+    /** Robot center to back edge, inches. From CAD. */
+    public static final double ROBOT_CENTER_TO_BACK_IN = 7.31;
 
-    /** Start pose when OpMode give none. Bottom right corner, left side on blue wall, front on bottom wall. */
+    /** Start pose when OpMode give none. Top right corner, left side on blue wall, back on top wall. */
     public static final Pose DEFAULT_START_POSE = new Pose(
-            FIELD_SIZE_IN - ROBOT_CENTER_TO_LEFT_IN, ROBOT_CENTER_TO_FRONT_IN, Math.toRadians(-90));
+            FIELD_SIZE_IN - ROBOT_CENTER_TO_LEFT_IN, FIELD_SIZE_IN - ROBOT_CENTER_TO_BACK_IN, Math.toRadians(-90));
 
     // ---------------------------------------------------------------- turret geometry
     //
