@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.pedropathing.ivy.Command;
 import com.pedropathing.math.Pose;
+import com.pedropathing.math.Velocity;
 
 import org.firstinspires.ftc.teamcode.globals.Alliance;
 import org.firstinspires.ftc.teamcode.globals.Constants;
@@ -30,6 +31,7 @@ public class Shooter implements Mechanism {
     private final Supplier<Pose> poseSupplier;
     private final Supplier<Alliance> allianceSupplier;
     private final Supplier<Goal> goalSupplier;
+    private final Supplier<Velocity> velocitySupplier;
 
     private final Debouncer atSpeedDebouncer =
             new Debouncer(Constants.AT_SPEED_DEBOUNCE_SECONDS, Debouncer.DebounceType.RISING);
@@ -69,10 +71,11 @@ public class Shooter implements Mechanism {
     private long lastFlywheelNanos = 0;
 
     public Shooter(Supplier<Pose> poseSupplier, Supplier<Alliance> allianceSupplier,
-                   Supplier<Goal> goalSupplier) {
+                   Supplier<Goal> goalSupplier, Supplier<Velocity> velocitySupplier) {
         this.poseSupplier = poseSupplier;
         this.allianceSupplier = allianceSupplier;
         this.goalSupplier = goalSupplier;
+        this.velocitySupplier = velocitySupplier;
         bindServos();
         applyTuning();
     }
@@ -138,24 +141,50 @@ public class Shooter implements Mechanism {
 
     // ---------------------------------------------------------------- state
 
+    /** Distance to aim point. Moving = led goal. */
     public double distanceToGoal() {
-        Pose pose = poseSupplier.get();
-        Alliance alliance = allianceSupplier.get();
-        Goal goal = goalSupplier.get();
-        double dx = Constants.goalX(alliance, goal) - pose.x();
-        double dy = Constants.goalY(alliance, goal) - pose.y();
-        return Math.hypot(dx, dy);
+        double[] shot = shotGeometry();
+        return Math.hypot(shot[0], shot[1]);
     }
 
-    /** Goal bearing, degrees from robot forward. */
+    /** Aim point bearing, degrees from robot forward. Moving = led goal. */
     public double bearingToGoal() {
+        double[] shot = shotGeometry();
+        double fieldBearingDeg = Math.toDegrees(Math.atan2(shot[1], shot[0]));
+        return Constants.normalizeDeg(fieldBearingDeg - Math.toDegrees(shot[2]));
+    }
+
+    /** Shot geometry: {dx, dy, heading}. Shooter spot to aim point, field frame. */
+    private double[] shotGeometry() {
         Pose pose = poseSupplier.get();
         Alliance alliance = allianceSupplier.get();
         Goal goal = goalSupplier.get();
-        double dx = Constants.goalX(alliance, goal) - pose.x();
-        double dy = Constants.goalY(alliance, goal) - pose.y();
-        double fieldBearingDeg = Math.toDegrees(Math.atan2(dy, dx));
-        return Constants.normalizeDeg(fieldBearingDeg - Math.toDegrees(pose.heading()));
+        double goalX = Constants.goalX(alliance, goal);
+        double goalY = Constants.goalY(alliance, goal);
+        double x = pose.x();
+        double y = pose.y();
+        double heading = pose.heading();
+
+        Velocity velocity = velocitySupplier.get();
+        if (Constants.SHOOT_ON_MOVE && velocity != null) {
+            // Robot keep moving till ball leave. Shoot from there.
+            x += velocity.vx * Constants.SOTM_LATENCY_S;
+            y += velocity.vy * Constants.SOTM_LATENCY_S;
+            heading += velocity.omega * Constants.SOTM_LATENCY_S;
+
+            // Ball keep robot speed in air. Aim at goal minus drift.
+            // Drift need flight time, flight time need distance. Few loops settle.
+            double aimX = goalX;
+            double aimY = goalY;
+            for (int i = 0; i < 3; i++) {
+                double flightS = Math.hypot(aimX - x, aimY - y) / Constants.SOTM_BALL_SPEED_IN_PER_S;
+                aimX = goalX - velocity.vx * flightS;
+                aimY = goalY - velocity.vy * flightS;
+            }
+            goalX = aimX;
+            goalY = aimY;
+        }
+        return new double[]{goalX - x, goalY - y, heading};
     }
 
     public boolean inTurretRange(double degrees) {

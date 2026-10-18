@@ -134,6 +134,7 @@ public class MainTeleOp extends NextOpMode {
         Telemetry.log("x", String.format("%.1f", pose.x()));
         Telemetry.log("y", String.format("%.1f", pose.y()));
         Telemetry.log("heading (deg)", String.format("%.1f", Math.toDegrees(pose.heading())));
+        Telemetry.log("velocity x / y (in/s)", String.format("%.1f / %.1f", robot.velocity().vx, robot.velocity().vy));
         Telemetry.log("goal", robot.goal() + " at (" + Constants.goalX(robot.alliance(), robot.goal())
                 + ", " + Constants.goalY(robot.alliance(), robot.goal()) + ")");
         Telemetry.log("distance to goal", String.format("%.1f", robot.shooter.distanceToGoal()));

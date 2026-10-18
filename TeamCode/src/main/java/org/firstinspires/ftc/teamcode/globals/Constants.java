@@ -26,7 +26,7 @@ public final class Constants {
 
     /** Goal B spot, inches, BLUE alliance. Start = A mirrored across y = 72. */
     public static double GOAL_B_X = 87.3;
-    public static double GOAL_B_Y = 57.6;
+    public static double GOAL_B_Y = 50.6;
 
     /** Teleop goal pick: robot must pass halfway line by this much to switch. Stop flicker. */
     public static double GOAL_SWITCH_DEADBAND_IN = 2.0;
@@ -207,6 +207,17 @@ public final class Constants {
     // ---------------------------------------------------------------- drivetrain
     //
     // Drive motors set in pedro/Constants.java.
+
+    // ---------------------------------------------------------------- shoot on the move
+
+    /** True = lead goal when robot moving. */
+    public static boolean SHOOT_ON_MOVE = true;
+
+    /** Time from aim to ball leaving shooter, seconds. Robot keep moving this long. */
+    public static double SOTM_LATENCY_S = 0.1;
+
+    /** Ball average speed across floor, inches per second. Flight time = distance / this. */
+    public static double SOTM_BALL_SPEED_IN_PER_S = 150;
 
     // ---------------------------------------------------------------- lookup tables
 

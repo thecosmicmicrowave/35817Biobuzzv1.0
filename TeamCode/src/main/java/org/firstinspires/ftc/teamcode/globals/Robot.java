@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.globals;
 import com.pedropathing.drivetrain.DrivePowers;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.math.Pose;
+import com.pedropathing.math.Velocity;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.subsystems.IntakeTransfer;
@@ -20,7 +21,7 @@ import dev.nextftc.robot.NextRobot;
 public class Robot implements NextRobot {
 
     public final IntakeTransfer intake = new IntakeTransfer();
-    public final Shooter shooter = new Shooter(this::pose, this::alliance, this::goal);
+    public final Shooter shooter = new Shooter(this::pose, this::alliance, this::goal, this::velocity);
 
     private Follower follower;
 
@@ -154,5 +155,10 @@ public class Robot implements NextRobot {
     /** Robot pose now. Default if no follower. */
     public Pose pose() {
         return follower == null ? Constants.DEFAULT_START_POSE : follower.pose();
+    }
+
+    /** Robot velocity, field frame. Zero if no follower. */
+    public Velocity velocity() {
+        return follower == null ? Velocity.zero() : follower.velocity();
     }
 }
