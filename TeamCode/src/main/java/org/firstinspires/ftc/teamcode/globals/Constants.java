@@ -20,9 +20,13 @@ public final class Constants {
     /** Field size, inches. Pedro field 0..144 both axes. */
     public static final double FIELD_SIZE_IN = 144;
 
-    /** Goal A spot, inches, BLUE alliance. B = A mirrored across y = 72. Red = mirrored across x = 72. */
+    /** Goal A spot, inches, BLUE alliance. Red = mirrored across x = 72. */
     public static double GOAL_A_X = 87.3;
     public static double GOAL_A_Y = 86.4;
+
+    /** Goal B spot, inches, BLUE alliance. Start = A mirrored across y = 72. */
+    public static double GOAL_B_X = 87.3;
+    public static double GOAL_B_Y = 57.6;
 
     /** Teleop goal pick: robot must pass halfway line by this much to switch. Stop flicker. */
     public static double GOAL_SWITCH_DEADBAND_IN = 2.0;
@@ -181,10 +185,10 @@ public final class Constants {
     public static double STAGE2_INTAKE_POWER = -0.5;
 
     /** Feeding: stage 1 toward shooter. Lower = slower shots. */
-    public static double STAGE1_FEED_POWER = 1.0;
+    public static double STAGE1_FEED_POWER = 0.9;
 
     /** Feeding: stage 2 toward shooter. Lower = slower shots. */
-    public static double STAGE2_FEED_POWER = 1.0;
+    public static double STAGE2_FEED_POWER = 0.9;
 
     /** Eject: both stages away from shooter. */
     public static double EJECT_POWER = -1.0;
@@ -242,12 +246,13 @@ public final class Constants {
 
     /** Goal x for alliance + goal. */
     public static double goalX(Alliance alliance, Goal goal) {
-        return alliance == Alliance.RED ? FIELD_SIZE_IN - GOAL_A_X : GOAL_A_X;
+        double blueX = goal == Goal.B ? GOAL_B_X : GOAL_A_X;
+        return alliance == Alliance.RED ? FIELD_SIZE_IN - blueX : blueX;
     }
 
     /** Goal y for alliance + goal. */
     public static double goalY(Alliance alliance, Goal goal) {
-        return goal == Goal.B ? FIELD_SIZE_IN - GOAL_A_Y : GOAL_A_Y;
+        return goal == Goal.B ? GOAL_B_Y : GOAL_A_Y;
     }
 
     public static double clamp(double value, double min, double max) {
