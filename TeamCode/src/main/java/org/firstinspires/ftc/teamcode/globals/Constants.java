@@ -225,8 +225,8 @@ public final class Constants {
     /** Ball leave shooter this high off floor, inches. Flywheel center, from CAD. */
     public static double LAUNCH_HEIGHT_IN = 12.3;
 
-    /** Goal opening height off floor, inches. MEASURE. */
-    public static double GOAL_HEIGHT_IN = 40.0;
+    /** Goal height, inches. Middle of up-facing CELL opening: 53.5 to 65.6 in (manual fig 9-10). */
+    public static double GOAL_HEIGHT_IN = 59.5;
 
     /** Gravity, inches per second squared. */
     public static final double GRAVITY_IN_PER_S2 = 386.09;
