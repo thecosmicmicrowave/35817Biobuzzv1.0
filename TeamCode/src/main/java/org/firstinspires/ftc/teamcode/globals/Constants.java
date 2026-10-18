@@ -27,8 +27,15 @@ public final class Constants {
     /** Teleop goal pick: robot must pass halfway line by this much to switch. Stop flicker. */
     public static double GOAL_SWITCH_DEADBAND_IN = 2.0;
 
-    /** Start pose when OpMode give none. */
-    public static final Pose DEFAULT_START_POSE = new Pose(72, 72, 0);
+    /** Robot center to left edge, inches. From CAD. */
+    public static final double ROBOT_CENTER_TO_LEFT_IN = 7.22;
+
+    /** Robot center to front (intake) edge, flower stowed, inches. From CAD. */
+    public static final double ROBOT_CENTER_TO_FRONT_IN = 10.32;
+
+    /** Start pose when OpMode give none. Bottom right corner, left side on blue wall, front on bottom wall. */
+    public static final Pose DEFAULT_START_POSE = new Pose(
+            FIELD_SIZE_IN - ROBOT_CENTER_TO_LEFT_IN, ROBOT_CENTER_TO_FRONT_IN, Math.toRadians(-90));
 
     // ---------------------------------------------------------------- turret geometry
     //
