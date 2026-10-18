@@ -25,6 +25,7 @@ public class MainTeleOp extends NextOpMode {
 
     private final Robot robot;
     private final CommandGamepad driver;
+    private final CommandGamepad operator;
 
     /** Got alliance + pose from auto. */
     private final boolean fromAuto;
@@ -49,10 +50,14 @@ public class MainTeleOp extends NextOpMode {
         robot.shooter.arm();
 
         driver = new CommandGamepad(gamepad1);
+        operator = new CommandGamepad(gamepad2);
         bindControls();
     }
 
     private void bindControls() {
+        // Driver 2: robot in top right corner, press to reset pose there.
+        operator.back().onTrue(Commands.instant(robot::resetPoseToStart));
+
         // Hold = feed all balls. Release = gate closed, stages off.
         driver.rightTrigger().isOver(0.5)
                 .whileTrue(ShootCommands.shootWhileHeld(robot))
@@ -124,6 +129,7 @@ public class MainTeleOp extends NextOpMode {
 
     private void pushTelemetry() {
         Telemetry.log("alliance", robot.alliance());
+        Telemetry.log("pose reset", "driver 2 BACK, robot in top right corner");
         Pose pose = robot.pose();
         Telemetry.log("x", String.format("%.1f", pose.x()));
         Telemetry.log("y", String.format("%.1f", pose.y()));

@@ -21,8 +21,8 @@ public final class Constants {
     public static final double FIELD_SIZE_IN = 144;
 
     /** Goal A spot, inches, BLUE alliance. B = A mirrored across y = 72. Red = mirrored across x = 72. */
-    public static double GOAL_A_X = 84.3;
-    public static double GOAL_A_Y = 82.2;
+    public static double GOAL_A_X = 87.3;
+    public static double GOAL_A_Y = 86.4;
 
     /** Teleop goal pick: robot must pass halfway line by this much to switch. Stop flicker. */
     public static double GOAL_SWITCH_DEADBAND_IN = 2.0;
@@ -119,7 +119,7 @@ public final class Constants {
 
     // ---------------------------------------------------------------- hood
 
-    public static double HOOD_MIN_POSITION = 0.0;
+    public static double HOOD_MIN_POSITION = 0.0254;
     public static double HOOD_MAX_POSITION = 0.45;
     public static double HOOD_STOWED_POSITION = 0.0;
 
@@ -135,14 +135,14 @@ public final class Constants {
     public static double FLYWHEEL_TICKS_PER_REV = 28.0;
 
     /** Flywheel velocity gains. */
-    public static double FLYWHEEL_KP = 0.002;
+    public static double FLYWHEEL_KP = 0.004;
     public static double FLYWHEEL_KI = 0.0;
     public static double FLYWHEEL_KD = 0.0;
     public static double FLYWHEEL_KS = 0.0;
     public static double FLYWHEEL_KV = 1.0 / 6000.0;
 
     /** RPM error bigger than this = bang-bang (full power or off). Smaller = PIDF. */
-    public static double FLYWHEEL_BANG_BANG_ERROR_RPM = 300;
+    public static double FLYWHEEL_BANG_BANG_ERROR_RPM = 100;
 
     /** Idle speed between shots. */
     public static double IDLE_RPM = 1000;
@@ -180,8 +180,11 @@ public final class Constants {
     /** Intaking: stage 2 half speed backwards. */
     public static double STAGE2_INTAKE_POWER = -0.5;
 
-    /** Feeding: both stages toward shooter. */
-    public static double FEED_POWER = 1.0;
+    /** Feeding: stage 1 toward shooter. Lower = slower shots. */
+    public static double STAGE1_FEED_POWER = 1.0;
+
+    /** Feeding: stage 2 toward shooter. Lower = slower shots. */
+    public static double STAGE2_FEED_POWER = 1.0;
 
     /** Eject: both stages away from shooter. */
     public static double EJECT_POWER = -1.0;
@@ -215,11 +218,24 @@ public final class Constants {
 
     static {
         // Placeholders. Replace when tuning.
-        DISTANCE_TO_RPM.put(24.0, 3000.0);
-        DISTANCE_TO_RPM.put(120.0, 3500.0);
+        DISTANCE_TO_RPM.put(28.6, 3000.0);
+        DISTANCE_TO_RPM.put(36.4, 3000.0);
+        DISTANCE_TO_RPM.put(42.9, 3000.0);
+        DISTANCE_TO_RPM.put(46.6, 3100.0);
+        DISTANCE_TO_RPM.put(55.4, 3200.0);
+        DISTANCE_TO_RPM.put(59.0, 3200.0);
+        DISTANCE_TO_RPM.put(62.4, 3300.0);
+        DISTANCE_TO_RPM.put(70.5, 3500.0);
+        DISTANCE_TO_RPM.put(75.5, 3700.0);
 
-        DISTANCE_TO_HOOD.put(24.0, 0.05);
-        DISTANCE_TO_HOOD.put(120.0, 0.45);
+        DISTANCE_TO_HOOD.put(28.6, 0.01);
+        DISTANCE_TO_HOOD.put(36.4, 0.13);
+        DISTANCE_TO_HOOD.put(42.9, 0.18);
+        DISTANCE_TO_HOOD.put(46.6, 0.33);
+        DISTANCE_TO_HOOD.put(55.4, 0.41);
+        DISTANCE_TO_HOOD.put(59.0, 0.37);
+        DISTANCE_TO_HOOD.put(62.4, 0.40);
+        DISTANCE_TO_HOOD.put(70.5, 0.45);
     }
 
     // ---------------------------------------------------------------- helpers

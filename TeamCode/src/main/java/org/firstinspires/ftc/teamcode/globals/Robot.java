@@ -70,6 +70,15 @@ public class Robot implements NextRobot {
         return pose;
     }
 
+    /** Pose = default start spot. Hold there, not old hold spot. */
+    public void resetPoseToStart() {
+        if (follower != null) {
+            follower.setPose(Constants.DEFAULT_START_POSE);
+            follower.hold(Constants.DEFAULT_START_POSE);
+        }
+        lastPose = Constants.DEFAULT_START_POSE;
+    }
+
     /** Robot-centric drive. No follower = nothing. */
     public void driveRobotCentric(double forward, double strafe, double turn) {
         if (follower != null) {

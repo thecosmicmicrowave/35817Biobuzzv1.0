@@ -139,7 +139,11 @@ public class IntakeTransfer implements Mechanism {
             applyGate(true);
             boolean gateClear =
                     System.currentTimeMillis() - startMs[0] >= Constants.GATE_OPEN_DELAY_MS;
-            runStages(gateClear ? Constants.FEED_POWER : 0);
+            if (gateClear) {
+                setStages(Constants.STAGE1_FEED_POWER, Constants.STAGE2_FEED_POWER);
+            } else {
+                runStages(0);
+            }
         }).setStart(() -> {
             startMs[0] = System.currentTimeMillis();
             applyGate(true);
