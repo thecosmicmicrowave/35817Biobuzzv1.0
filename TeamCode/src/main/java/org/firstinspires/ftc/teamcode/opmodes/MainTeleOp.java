@@ -17,6 +17,8 @@ import org.firstinspires.ftc.teamcode.util.FieldDrawing;
 import org.firstinspires.ftc.teamcode.util.MathUtil;
 import org.firstinspires.ftc.teamcode.util.RobotTelemetry;
 
+import org.firstinspires.ftc.teamcode.pedro.SharedOctoQuadLocalizer;
+
 import dev.nextftc.robot.opmode.BulkReadHook;
 import dev.nextftc.robot.opmode.NextOpMode;
 import dev.nextftc.robot.opmode.NextTeleop;
@@ -163,7 +165,7 @@ public class MainTeleOp extends NextOpMode {
         tele.detail("release speed (in/s)", String.format("%.1f", shot.releaseSpeed));
         tele.detail("battery (V)", String.format("%.2f", robot.battery.volts()));
         SharedOctoQuadLocalizer localizer = robot.localizer();
-        if (localizer != null) {
+        if (localizer != null) {    
             tele.add("odo status", String.format(java.util.Locale.US, "%s | crc:%s | bad:%d (consec %d)",
                     localizer.lastStatus(),
                     localizer.localizerData().isDataValid() ? "OK" : "ERR",

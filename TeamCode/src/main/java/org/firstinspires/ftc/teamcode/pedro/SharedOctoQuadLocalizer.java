@@ -34,7 +34,7 @@ public class SharedOctoQuadLocalizer implements Localizer {
     private long badEncoderReads = 0;
     private int consecutiveBadReads = 0;
     private int maxConsecutiveBadReads = 0;
-    private LocalizerStatus lastStatus = LocalizerStatus.NOT_RUNNING;
+    private LocalizerStatus lastStatus = LocalizerStatus.INVALID;
     private long lastReadTimeNanos = 0;
 
     public SharedOctoQuadLocalizer(HardwareMap hardwareMap, OctoQuadConfig config) {
